@@ -1,10 +1,16 @@
+/*
+ * Copyright (c) 2018, Juniper Networks, Inc.
+ * All rights reserved.
+ */
+
 package main
 
 import (
 	"compress/zlib"
-	"google.golang.org/grpc"
 	"io"
 	"io/ioutil"
+
+	"google.golang.org/grpc"
 )
 
 func newDEFLATEDecompressor() grpc.Decompressor {
