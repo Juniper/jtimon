@@ -53,6 +53,8 @@ var (
 	pProfPort      = flag.Int32("pprof-port", 6060, "Profile port")
 	gtrace         = flag.Bool("gtrace", false, "Collect GRPC traces")
 	grpcHeaders    = flag.Bool("grpc-headers", false, "Add grpc headers in DB")
+	udp            = flag.Bool("udp-server", false, "Become UDP server to receive UDP telemetry packets from Junos")
+	port           = flag.Int64("port", 0, "UDP port number to listen on")
 
 	version   = "version-not-available"
 	buildTime = "build-time-not-available"
@@ -247,6 +249,10 @@ func main() {
 	fmt.Printf("Version: %s BuildTime %s\n", version, buildTime)
 	if *ver {
 		return
+	}
+
+	if *udp {
+		udpInit()
 	}
 
 	if *expConfig {
