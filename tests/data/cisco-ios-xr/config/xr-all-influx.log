@@ -1,0 +1,71 @@
+Running config of JTIMON:
+ {
+    "port": 32767,
+    "host": "172.27.113.191",
+    "user": "admin",
+    "password": "admin",
+    "cid": "1001",
+    "meta": false,
+    "eos": false,
+    "grpc": {
+        "ws": 1048576
+    },
+    "tls": {
+        "clientcrt": "",
+        "clientkey": "",
+        "ca": "",
+        "servername": ""
+    },
+    "influx": {
+        "server": "127.0.0.1",
+        "port": 50052,
+        "dbname": "test-db",
+        "user": "influx",
+        "password": "influxdb",
+        "recreate": false,
+        "measurement": "test-m",
+        "batchsize": 102400,
+        "batchfrequency": 2000,
+        "http-timeout": 30,
+        "retention-policy": "",
+        "accumulator-frequency": 2000,
+        "write-per-measurement": false
+    },
+    "kafka": null,
+    "paths": [
+        {
+            "path": "SUB_JTIMON_ALL",
+            "freq": 10000,
+            "mode": ""
+        }
+    ],
+    "log": {
+        "file": "tests/data/cisco-ios-xr/config/xr-all-influx.log",
+        "periodic-stats": 0,
+        "verbose": false
+    },
+    "vendor": {
+        "name": "cisco-iosxr",
+        "remove-namespace": true,
+        "schema": [
+            {
+                "path": "tests/data/cisco-ios-xr/schema/"
+            }
+        ],
+        "gnmi": null
+    },
+    "alias": "",
+    "password-decoder": "",
+    "enable-uint": false
+}
+invoking getInfluxClient for init
+invoking getInfluxClient
+batch size: 102400 batch frequency: 2000
+Accumulator frequency: 2000
+Successfully initialized InfluxDB Client
+Accumulated points : 10240
+Batch write successful! Number of points written post merge logic:  638
+Accumulated points : 10240
+Batch write successful! Number of points written post merge logic:  583
+Accumulated points : 2140
+Batch write successful! Number of points written post merge logic:  113
