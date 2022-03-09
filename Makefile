@@ -21,7 +21,7 @@ clean: ## clean the build
 	-rm -f ${BINARY}
 
 
-LDFLAGS=--ldflags="-X main.jtimonVersion=${TAG}-${COMMIT}-${BRANCH} -X main.buildTime=${TIME}"
+LDFLAGS=--ldflags="-X main.jtimonVersion=${TAG}-${COMMIT}-${BRANCH} -X main.buildTime=${TIME} -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn"
 
 linux: ## generate a linux version of the binary
 	GOOS=linux GOARCH=${GOARCH} go build -mod vendor ${LDFLAGS} -o ${BINARY}-linux-${GOARCH} .

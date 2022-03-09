@@ -278,8 +278,21 @@ func work(jctx *JCtx, statusch chan struct{}) {
 	var (
 		retry   bool
 		opts    []grpc.DialOption
+		srvopts    []grpc.ServerOption
 		tryGnmi bool
+		err	error
 	)
+
+        if (jctx.config.Vendor.GnmiDialout) {
+		fmt.Printf("\nGnmiDialout is enabled...\n")
+		srvopts, err = getServerSecurityOptions(jctx)
+		if err == nil {
+			start_dialout_server(jctx, srvopts)
+			return
+		}
+		fmt.Printf("\nInvalid configuration for GnmiDialout.\n")
+		return
+	}
 
 	if jctx.config.Vendor.Gnmi != nil {
 		tryGnmi = true
@@ -294,13 +307,15 @@ connect:
 		retry = true
 		goto connect
 	}
+
+	hostname := jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
+
 	if opts, err = getGPRCDialOptions(jctx, vendor); err != nil {
 		jLog(jctx, fmt.Sprintf("%v", err))
 		statusch <- struct{}{}
 		return
 	}
 
-	hostname := jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
 	if hostname == ":0" {
 		statusch <- struct{}{}
 		jLog(jctx, fmt.Sprintf("Not a valid host-name %s", hostname))

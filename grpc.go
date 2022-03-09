@@ -38,6 +38,37 @@ func getSecurityOptions(jctx *JCtx) (grpc.DialOption, error) {
 	return grpc.WithTransportCredentials(transportCreds), nil
 }
 
+func getServerSecurityOptions(jctx *JCtx) ([]grpc.ServerOption, error) {
+        var bs []byte
+        var err error
+	var opts []grpc.ServerOption
+
+        if jctx.config.TLS.CA == "" {
+		fmt.Printf("\nNo TLS configured. \n");
+                return opts, nil
+        }
+
+        certificate, _ := tls.LoadX509KeyPair(jctx.config.TLS.ClientCrt, jctx.config.TLS.ClientKey)
+        certPool := x509.NewCertPool()
+        if bs, err = ioutil.ReadFile(jctx.config.TLS.CA); err != nil {
+		fmt.Printf("\nError reading..");
+                return opts, fmt.Errorf("[%s] failed to read ca cert: %s", jctx.config.Host, err)
+        }
+
+        if ok := certPool.AppendCertsFromPEM(bs); !ok {
+                return opts, fmt.Errorf("[%s] failed to append certs", jctx.config.Host)
+        }
+
+        transportCreds := credentials.NewTLS(&tls.Config{
+                Certificates: []tls.Certificate{certificate},
+		ClientAuth:	tls.RequireAndVerifyClientCert,
+                RootCAs:      certPool,
+        })
+
+        opts = append(opts, grpc.Creds(transportCreds))
+	return opts, nil
+}
+
 func getGPRCDialOptions(jctx *JCtx, vendor *vendor) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 
