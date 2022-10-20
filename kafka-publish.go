@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	na_pb "github.com/Juniper/jtimon/telemetry"
@@ -102,9 +103,14 @@ func KafkaConnect(k *KafkaConfig) error {
 
 // KafkaInit to initialize Kafka
 func KafkaInit(jctx *JCtx) error {
-	cfg := jctx.config
+	cfg := &jctx.config
 	if cfg.Kafka == nil {
-		return nil
+		if !*dialOut {
+			return nil
+		}
+
+		cfg.Kafka = &KafkaConfig{}
+		cfg.Kafka.Brokers = strings.Split(*kafkaBroker, ",")
 	}
 
 	if err := KafkaConnect(cfg.Kafka); err != nil {
