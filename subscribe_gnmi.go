@@ -434,6 +434,7 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx) SubErrorCode {
 
 		mode := gnmiMode(p.Mode)
 		mode, freq := gnmiFreq(mode, p.Freq)
+		gp.Origin = p.Origin
 
 		subs.Subscription = append(subs.Subscription, &gnmi.Subscription{Path: gp, Mode: mode, SampleInterval: freq})
 	}

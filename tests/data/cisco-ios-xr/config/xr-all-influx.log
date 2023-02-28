@@ -36,7 +36,8 @@ Running config of JTIMON:
         {
             "path": "SUB_JTIMON_ALL",
             "freq": 10000,
-            "mode": ""
+            "mode": "",
+            "origin": ""
         }
     ],
     "log": {

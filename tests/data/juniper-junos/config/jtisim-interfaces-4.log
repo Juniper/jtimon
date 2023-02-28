@@ -36,7 +36,8 @@ Running config of JTIMON:
         {
             "path": "/interfaces",
             "freq": 10000,
-            "mode": ""
+            "mode": "",
+            "origin": ""
         }
     ],
     "log": {
@@ -59,9 +60,10 @@ invoking getInfluxClient
 compression = none
 Connecting to 127.0.0.1:90052
 subscribe returns, reconnecting after 10s for worker tests/data/juniper-junos/config/jtisim-interfaces-4.json
+compression = none
 
 
-Collector Stats for 127.0.0.1:90052 (Run time : 10.008153871s)
+Collector Stats for 127.0.0.1:90052 (Run time : 10.0144035s)
 0            : in-packets
 0            : data points (KV pairs)
 0            : in-header wirelength (bytes)
@@ -71,5 +73,7 @@ Collector Stats for 127.0.0.1:90052 (Run time : 10.008153871s)
 
 
 Streaming for host 127.0.0.1 will be stopped (SIGINT)
+Reconnecting to 127.0.0.1:90052
+subscribe returns, reconnecting after 10s for worker tests/data/juniper-junos/config/jtisim-interfaces-4.json
 compression = none
 Connection for 127.0.0.1:90052 has been interrupted

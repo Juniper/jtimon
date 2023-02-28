@@ -36,7 +36,8 @@ Running config of JTIMON:
         {
             "path": "/interfaces",
             "freq": 10000,
-            "mode": ""
+            "mode": "",
+            "origin": ""
         }
     ],
     "log": {
@@ -69,19 +70,22 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Tue Mar  1 17:51:29 EST 2022 |               1980 |                 40 |              87418 |              87418 |
+| Mon Feb 27 17:44:24 PST 2023 |               1980 |                 40 |              87418 |              87418 |
 
 Batch processing: #packets:40 #points:40
 Batch write successful! Post batch write available points:  0
 
-| Tue Mar  1 17:51:31 EST 2022 |               1980 |                 40 |              87418 |              87418 |
+| Mon Feb 27 17:44:26 PST 2023 |               1980 |                 40 |              87418 |              87418 |
 
 
-| Tue Mar  1 17:51:33 EST 2022 |               1980 |                 40 |              87418 |              87418 |
+| Mon Feb 27 17:44:28 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+
+
+| Mon Feb 27 17:44:30 PST 2023 |               1980 |                 40 |              87418 |              87418 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 8.0062395s)
+Collector Stats for 127.0.0.1:50051 (Run time : 8.00481325s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)
