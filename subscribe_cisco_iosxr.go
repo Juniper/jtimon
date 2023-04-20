@@ -15,7 +15,7 @@ import (
 	"unicode"
 
 	pb "github.com/Juniper/jtimon/multi-vendor/cisco/iosxr/grpc-proto"
-	"github.com/Juniper/jtimon/multi-vendor/cisco/iosxr/telemetry-proto"
+	telemetry "github.com/Juniper/jtimon/multi-vendor/cisco/iosxr/telemetry-proto"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 )

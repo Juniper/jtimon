@@ -17,4 +17,6 @@ const (
 	MatchExpressionXpath = "\\/([^\\/]*)\\[(.*?)+?(?:\\])"
 	// MatchExpressionKey is for pattern matching the single and multiple key value pairs
 	MatchExpressionKey = "([A-Za-z0-9-/]*)=(.*?)?(?: and |$)+"
+	// UDPMatchExpressionKey is for pattern matching the single and multiple key value pairs for UDP data
+	UDPMatchExpressionKey = "([A-Za-z0-9-_]*)=(?:'(.*?)'|\"(.*?)\")?(?: and |$)+"
 )
