@@ -74,9 +74,8 @@ func main() {
 		return
 	}
 
-	if *udp {
-		udpWork(configFiles)
-	} else {
+	isUdp := udpWork(configFiles)
+	if !isUdp {
 		workers := NewJWorkers(*configFiles, *configFileList, *maxRun)
 		workers.StartWorkers()
 		workers.Wait()

@@ -457,12 +457,6 @@ func udpAddIDB(mData map[string]map[string]interface{}, jctx *JCtx, rtime time.T
 
 func udpInit(jctx *JCtx) error {
 udpdial:
-		err := ConfigRead(jctx, true, nil)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-
 		udpHostname := jctx.config.UDP.Host + ":" + strconv.Itoa(jctx.config.UDP.Port)
 		go jctx.udpSignalHandler()
 
@@ -490,7 +484,7 @@ udpdial:
 	return nil
 }
 
-func udpWork(configFiles *[]string) {
+func udpWork(configFiles *[]string) bool {
 	var wg sync.WaitGroup
 	jctx := JCtx{
 		wg:        &wg,
@@ -500,9 +494,18 @@ func udpWork(configFiles *[]string) {
 		jctx.stats = statsCtx{
 			startTime: time.Now(),
 		}
+		err := ConfigRead(&jctx, true, nil)
+		if err != nil {
+			jLog(&jctx, fmt.Sprintf("%v ConfigRead err %s", fileName, err))
+			return false
+		}
+		if jctx.config.UDP.Host == "" || jctx.config.UDP.Port == 0 {
+			return false
+		}
 		if err := udpInit(&jctx); err == nil {
 			jctx.wg.Add(1)
 		}
 	}
 	jctx.wg.Wait()
+	return true
 }
