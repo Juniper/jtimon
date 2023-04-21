@@ -23,6 +23,7 @@ var (
 	prom           = flag.Bool("prometheus", false, "Stats for prometheus monitoring system")
 	promHost       = flag.String("prometheus-host", "127.0.0.1", "IP to bind Prometheus service to")
 	promPort       = flag.Int32("prometheus-port", 8090, "Prometheus port")
+	udp             = flag.Bool("udp", false, "Stats for udp monitoring system")
 	prefixCheck    = flag.Bool("prefix-check", false, "Report missing __prefix__ in telemetry packet")
 	pProf          = flag.Bool("pprof", false, "Profile JTIMON")
 	pProfPort      = flag.Int32("pprof-port", 6060, "Profile port")
@@ -73,9 +74,12 @@ func main() {
 		return
 	}
 
-	workers := NewJWorkers(*configFiles, *configFileList, *maxRun)
-	workers.StartWorkers()
-	workers.Wait()
+	isUdp := udpWork(configFiles)
+	if !isUdp {
+		workers := NewJWorkers(*configFiles, *configFileList, *maxRun)
+		workers.StartWorkers()
+		workers.Wait()
+	}
 
 	log.Printf("all done ... exiting!")
 }

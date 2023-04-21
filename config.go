@@ -27,6 +27,7 @@ type Config struct {
 	Meta              bool          `json:"meta"`
 	EOS               bool          `json:"eos"`
 	GRPC              GRPCConfig    `json:"grpc"`
+	UDP               UDPConfig     `json:"udp"`
 	TLS               TLSConfig     `json:"tls"`
 	Influx            InfluxConfig  `json:"influx"`
 	Kafka             *KafkaConfig  `json:"kafka"`
@@ -73,6 +74,12 @@ type APIConfig struct {
 //GRPCConfig is to specify GRPC params
 type GRPCConfig struct {
 	WS int32 `json:"ws"`
+}
+
+type UDPConfig struct {
+	Port              int           `json:"port"`
+	Host              string        `json:"host"`
+	Protos            []string      `json:"protos"`
 }
 
 // TLSConfig is to specify TLS params
@@ -275,6 +282,9 @@ func (jctx *JCtx) isConfigChanged(new Config) bool {
 		return true
 	}
 	if !reflect.DeepEqual(old.Influx, new.Influx) {
+		return true
+	}
+	if !reflect.DeepEqual(old.UDP, new.UDP) {
 		return true
 	}
 
