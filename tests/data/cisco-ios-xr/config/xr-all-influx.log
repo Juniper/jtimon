@@ -8,13 +8,26 @@ Running config of JTIMON:
     "meta": false,
     "eos": false,
     "grpc": {
-        "ws": 1048576
+        "ws": 1048576,
+        "tunnel-server": {
+            "address": "",
+            "dial-target": "",
+            "dial-target-type": "",
+            "tls": {
+                "clientcrt": "",
+                "clientkey": "",
+                "ca": "",
+                "servername": "",
+                "insecure": false
+            }
+        }
     },
     "tls": {
         "clientcrt": "",
         "clientkey": "",
         "ca": "",
-        "servername": ""
+        "servername": "",
+        "insecure": false
     },
     "influx": {
         "server": "127.0.0.1",

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Juniper/jtimon/multi-vendor/cisco/iosxr/telemetry-proto"
+	telemetry "github.com/Juniper/jtimon/multi-vendor/cisco/iosxr/telemetry-proto"
 	"github.com/golang/protobuf/proto"
 	flag "github.com/spf13/pflag"
 )

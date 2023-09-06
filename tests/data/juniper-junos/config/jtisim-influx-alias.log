@@ -8,13 +8,26 @@ Running config of JTIMON:
     "meta": false,
     "eos": false,
     "grpc": {
-        "ws": 1048576
+        "ws": 1048576,
+        "tunnel-server": {
+            "address": "",
+            "dial-target": "",
+            "dial-target-type": "",
+            "tls": {
+                "clientcrt": "",
+                "clientkey": "",
+                "ca": "",
+                "servername": "",
+                "insecure": false
+            }
+        }
     },
     "tls": {
         "clientcrt": "",
         "clientkey": "",
         "ca": "",
-        "servername": ""
+        "servername": "",
+        "insecure": false
     },
     "influx": {
         "server": "127.0.0.1",
@@ -70,27 +83,27 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Mon Feb 27 17:44:24 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:48 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 Batch write successful! Post batch write available points:  0
 
-| Mon Feb 27 17:44:26 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:50 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:44:28 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:52 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:44:30 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:54 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 8.00481325s)
+Collector Stats for 127.0.0.1:50051 (Run time : 8.003122847s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)
 87418        : in-payload length (bytes)
-87418        : in-payload wirelength (bytes)
+87618        : in-payload wirelength (bytes)
 10927        : throughput (bytes per seconds)
 
 

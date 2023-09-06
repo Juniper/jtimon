@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"net"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -17,7 +19,7 @@ import (
 // InfluxCtx is run time info of InfluxDB data structures
 type InfluxCtx struct {
 	sync.Mutex
-	influxClient   *client.Client
+	influxClient   *client.HTTPClient
 	batchWCh       chan []*client.Point
 	batchWMCh      chan *batchWMData
 	accumulatorCh  chan (*metricIDB)
@@ -577,11 +579,18 @@ func addIDB(ocData *na_pb.OpenConfigData, jctx *JCtx, rtime time.Time) {
 	}
 }
 
-func getInfluxClient(cfg Config, timeout time.Duration) *client.Client {
+func getInfluxClient(cfg Config, timeout time.Duration) *client.HTTPClient {
 	if cfg.Influx.Server == "" {
 		return nil
 	}
-	addr := fmt.Sprintf("http://%v:%v", cfg.Influx.Server, cfg.Influx.Port)
+
+	// TODO: Vivek Resolve it only once and reuse the endpoint
+	resolvedArr, err := net.ResolveTCPAddr("tcp", cfg.Influx.Server+":"+strconv.Itoa(cfg.Influx.Port))
+	if err != nil {
+		log.Printf("ResolveTCPAddr failed for %s, err: %v\n", cfg.Influx.Server+":"+strconv.Itoa(cfg.Influx.Port), err)
+		return nil
+	}
+	addr := fmt.Sprintf("http://%v:%v", resolvedArr.IP, resolvedArr.Port)
 	c, err := client.NewHTTPClient(client.HTTPConfig{
 		Addr:     addr,
 		Username: cfg.Influx.User,

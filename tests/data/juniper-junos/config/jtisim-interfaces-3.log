@@ -8,13 +8,26 @@ Running config of JTIMON:
     "meta": false,
     "eos": false,
     "grpc": {
-        "ws": 1048576
+        "ws": 1048576,
+        "tunnel-server": {
+            "address": "",
+            "dial-target": "",
+            "dial-target-type": "",
+            "tls": {
+                "clientcrt": "",
+                "clientkey": "",
+                "ca": "",
+                "servername": "",
+                "insecure": false
+            }
+        }
     },
     "tls": {
         "clientcrt": "",
         "clientkey": "",
         "ca": "",
-        "servername": ""
+        "servername": "",
+        "insecure": false
     },
     "influx": {
         "server": "",
@@ -57,6 +70,7 @@ Running config of JTIMON:
 }
 invoking getInfluxClient for init
 invoking getInfluxClient
+New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
@@ -67,34 +81,34 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Mon Feb 27 17:43:13 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:10:37 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:43:15 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:10:39 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:43:17 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:10:41 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:43:19 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:10:43 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:43:21 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:10:45 IST 2023 |               2515 |                 51 |             110952 |             111207 |
 
 
-| Mon Feb 27 17:43:23 PST 2023 |               3960 |                 80 |             174838 |             174838 |
+| Wed Sep  6 05:10:47 IST 2023 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Mon Feb 27 17:43:25 PST 2023 |               3960 |                 80 |             174838 |             174838 |
+| Wed Sep  6 05:10:49 IST 2023 |               3960 |                 80 |             174838 |             175238 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 15.002841292s)
+Collector Stats for 127.0.0.1:50051 (Run time : 15.00117689s)
 80           : in-packets
 3960         : data points (KV pairs)
 25           : in-header wirelength (bytes)
 174838       : in-payload length (bytes)
-174838       : in-payload wirelength (bytes)
+175238       : in-payload wirelength (bytes)
 11655        : throughput (bytes per seconds)
 
 

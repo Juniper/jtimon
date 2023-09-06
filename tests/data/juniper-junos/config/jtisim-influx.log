@@ -8,13 +8,26 @@ Running config of JTIMON:
     "meta": false,
     "eos": false,
     "grpc": {
-        "ws": 1048576
+        "ws": 1048576,
+        "tunnel-server": {
+            "address": "",
+            "dial-target": "",
+            "dial-target-type": "",
+            "tls": {
+                "clientcrt": "",
+                "clientkey": "",
+                "ca": "",
+                "servername": "",
+                "insecure": false
+            }
+        }
     },
     "tls": {
         "clientcrt": "",
         "clientkey": "",
         "ca": "",
-        "servername": ""
+        "servername": "",
+        "insecure": false
     },
     "influx": {
         "server": "127.0.0.1",
@@ -60,6 +73,7 @@ invoking getInfluxClient
 batch size: 102400 batch frequency: 2000
 Accumulator frequency: 2000
 Successfully initialized InfluxDB Client
+New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
@@ -70,55 +84,55 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Mon Feb 27 17:43:59 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:23 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 Batch write successful! Post batch write available points:  0
 
-| Mon Feb 27 17:44:01 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:25 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:44:03 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:27 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:44:05 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:29 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:44:07 PST 2023 |               1980 |                 40 |              87418 |              87418 |
-
-Batch processing: #packets:40 #points:40
-
-| Mon Feb 27 17:44:09 PST 2023 |               3960 |                 80 |             174838 |             174838 |
-
-Batch write successful! Post batch write available points:  0
-
-| Mon Feb 27 17:44:11 PST 2023 |               3960 |                 80 |             174838 |             174838 |
-
-
-| Mon Feb 27 17:44:13 PST 2023 |               3960 |                 80 |             174838 |             174838 |
-
-
-| Mon Feb 27 17:44:15 PST 2023 |               3960 |                 80 |             174838 |             174838 |
-
-
-| Mon Feb 27 17:44:17 PST 2023 |               3960 |                 80 |             174838 |             174838 |
+| Wed Sep  6 05:11:31 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 
-| Mon Feb 27 17:44:19 PST 2023 |               5940 |                120 |             262258 |             262258 |
+| Wed Sep  6 05:11:33 IST 2023 |               3960 |                 80 |             174838 |             175238 |
 
 Batch write successful! Post batch write available points:  0
 
-| Mon Feb 27 17:44:21 PST 2023 |               5940 |                120 |             262258 |             262258 |
+| Wed Sep  6 05:11:35 IST 2023 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Wed Sep  6 05:11:37 IST 2023 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Wed Sep  6 05:11:39 IST 2023 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Wed Sep  6 05:11:41 IST 2023 |               4158 |                 84 |             183580 |             184000 |
+
+Batch processing: #packets:40 #points:40
+
+| Wed Sep  6 05:11:43 IST 2023 |               5940 |                120 |             262258 |             262858 |
+
+Batch write successful! Post batch write available points:  0
+
+| Wed Sep  6 05:11:45 IST 2023 |               5940 |                120 |             262258 |             262858 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 25.004883958s)
+Collector Stats for 127.0.0.1:50051 (Run time : 25.002066633s)
 120          : in-packets
 5940         : data points (KV pairs)
 25           : in-header wirelength (bytes)
 262258       : in-payload length (bytes)
-262258       : in-payload wirelength (bytes)
+262858       : in-payload wirelength (bytes)
 10490        : throughput (bytes per seconds)
 
 
