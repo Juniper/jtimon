@@ -8,13 +8,26 @@ Running config of JTIMON:
     "meta": false,
     "eos": false,
     "grpc": {
-        "ws": 1048576
+        "ws": 1048576,
+        "tunnel-server": {
+            "address": "",
+            "dial-target": "",
+            "dial-target-type": "",
+            "tls": {
+                "clientcrt": "",
+                "clientkey": "",
+                "ca": "",
+                "servername": "",
+                "insecure": false
+            }
+        }
     },
     "tls": {
         "clientcrt": "",
         "clientkey": "",
         "ca": "",
-        "servername": ""
+        "servername": "",
+        "insecure": false
     },
     "influx": {
         "server": "",
@@ -57,6 +70,7 @@ Running config of JTIMON:
 }
 invoking getInfluxClient for init
 invoking getInfluxClient
+New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
@@ -67,19 +81,19 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Mon Feb 27 17:43:53 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:17 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb 27 17:43:55 PST 2023 |               1980 |                 40 |              87418 |              87418 |
+| Wed Sep  6 05:11:19 IST 2023 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 6.011319916s)
+Collector Stats for 127.0.0.1:50051 (Run time : 6.000890712s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)
 87418        : in-payload length (bytes)
-87418        : in-payload wirelength (bytes)
+87618        : in-payload wirelength (bytes)
 14569        : throughput (bytes per seconds)
 
 

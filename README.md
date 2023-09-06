@@ -60,8 +60,8 @@ Enter config file name: bla.json
 ## CLI Options
 
 ```
-$./jtimon-darwin-amd64 --help                                                                                                      ✔  12:33:35 
-Usage of ./jtimon-darwin-amd64:
+$ ./jtimon-linux-amd64 --help
+Usage of ./jtimon-linux-amd64:
       --compression string         Enable HTTP/2 compression (gzip)
       --config strings             Config file name(s)
       --config-file-list string    List of Config files
