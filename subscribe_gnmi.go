@@ -26,40 +26,6 @@ import (
 // Only for unit test and coverage purposes
 var gGnmiUnitTestCoverage bool
 
-// Convert data to float64, Prometheus sampling is only in float64
-func convToFloatForPrometheus(v interface{}) (float64, error) {
-	var fieldValue float64
-
-	switch v.(type) {
-	case int64:
-		fieldValue = float64(v.(int64))
-	case float64:
-		fieldValue = v.(float64)
-	case bool:
-		if v.(bool) == true {
-			fieldValue = 1
-		} else {
-			fieldValue = 0
-		}
-
-	case string:
-		floatVal, err := strconv.ParseFloat(v.(string), 64)
-		if err != nil {
-			errmsg := fmt.Sprintf("Unable to convert string val \"%v\"", v)
-			return 0, errors.New(errmsg)
-		}
-		fieldValue = floatVal
-	case *google_protobuf.Any:
-	case []interface{}:
-	case []byte:
-	default:
-		errMsg := fmt.Sprintf("Unsupported type %T", v)
-		return 0, errors.New(errMsg)
-	}
-
-	return fieldValue, nil
-}
-
 /*
  * Publish metrics to Prometheus. Below is the terminology:
  *   1. Field - Metric
@@ -81,9 +47,32 @@ func publishToPrometheus(jctx *JCtx, parseOutput *gnmiParseOutputT) {
 			continue
 		}
 
-		floatVal, err := convToFloatForPrometheus(v)
-		if err != nil {
-			jLog(jctx, fmt.Sprintf("Value conversion failed for %v, error: %v", p, err))
+		var floatVal float64
+		switch v.(type) {
+		case int64:
+			floatVal = float64(v.(int64))
+		case float64:
+			floatVal = v.(float64)
+		case bool:
+			if v.(bool) == true {
+				floatVal = 1
+			} else {
+				floatVal = 0
+			}
+		case string:
+			// store leaf of type string as the tag
+			leafStr := convertToTag(p)
+			if _, ok := promKvpairs[promName(getAlias(alias, leafStr))]; !ok {
+				promKvpairs[promName(getAlias(alias, leafStr))] = v.(string)
+			} else {
+				continue // do not insert existing tag
+			}
+			floatVal = 0 // insert the leaf with 0 as float value
+		case *google_protobuf.Any:
+		case []interface{}:
+		case []byte:
+		default:
+			jLog(jctx, fmt.Sprintf("Unsupported type %T for %v", v, p))
 			continue
 		}
 

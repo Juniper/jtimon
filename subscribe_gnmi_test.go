@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -13,70 +12,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
-
-func TestConvToFloatForPrometheus(t *testing.T) {
-	tests := []struct {
-		name   string
-		input  interface{}
-		err    bool
-		output float64
-	}{
-		{
-			name:  "int",
-			input: 100,
-			err:   true,
-		},
-		{
-			name:  "uint",
-			input: 100,
-			err:   true,
-		},
-		{
-			name:   "int64",
-			input:  int64(100),
-			err:    false,
-			output: float64(100),
-		},
-		{
-			name:   "bool",
-			input:  true,
-			err:    false,
-			output: float64(1),
-		},
-		{
-			name:   "string",
-			input:  "100",
-			err:    false,
-			output: float64(100),
-		},
-		{
-			name:  "string-err",
-			input: "helloe",
-			err:   true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			output, err := convToFloatForPrometheus(test.input)
-			if !test.err {
-				if err != nil || !reflect.DeepEqual(test.output, output) {
-					var errMsg string
-					errMsg = fmt.Sprintf("\nexpected:%v\nGot:%v", test.output, output)
-					t.Errorf(errMsg)
-				}
-			}
-
-			if test.err {
-				if err == nil && reflect.DeepEqual(test.output, output) {
-					var errMsg string
-					errMsg = fmt.Sprintf("\nexpected:%v\nGot:%v", test.output, output)
-					t.Errorf(errMsg)
-				}
-			}
-		})
-	}
-}
 
 func TestGnmiHandleResponse(t *testing.T) {
 	*noppgoroutines = true
