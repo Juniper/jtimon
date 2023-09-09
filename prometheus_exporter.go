@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +21,17 @@ var (
 // Prometheus does not like special characters, handle them.
 func promName(input string) string {
 	return promNameRegex.ReplaceAllString(input, "_")
+}
+
+// Convert the XML path of a field to a tag
+// Example: /interfaces/interface/state/oper-status
+//       to /interfaces/interface/state/@oper-status
+func convertToTag(input string) string {
+	lastIndex := strings.LastIndex(input, "/");
+	if lastIndex != -1 {
+		input = input[:lastIndex] + "/@" + input[lastIndex + 1:]
+	}
+	return input
 }
 
 type jtimonMetric struct {
@@ -151,11 +161,14 @@ func addPrometheus(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 				fieldValue = 0
 			}
 		case *na_pb.KeyValue_StrValue:
-			floatVal, err := strconv.ParseFloat(v.GetStrValue(), 64)
-			if err != nil {
-				continue
+			// store leaf of type string as the tag
+			leafStr := convertToTag(field)
+			if _, ok := tags[leafStr]; !ok {
+				tags[leafStr] = v.GetStrValue()
+			} else {
+				continue // do not insert existing tag
 			}
-			fieldValue = floatVal
+			fieldValue = 0 // insert the leaf with 0 as float value
 		case *na_pb.KeyValue_LeaflistValue:
 			e := v.GetLeaflistValue().Element
 			csLLStrValue := ""
