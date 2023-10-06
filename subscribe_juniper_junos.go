@@ -75,6 +75,15 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 				s += fmt.Sprintf("  bytes_value: %s\n", value.BytesValue)
 			case *na_pb.KeyValue_LeaflistValue:
 				s += fmt.Sprintf("  leaf_list_value: %s\n", value.LeaflistValue)
+				e := kv.GetLeaflistValue().Element
+				for _, elem := range e {
+					switch elem.Value.(type) {
+					case *na_pb.TypedValue_LeaflistStrValue:
+						llStrValue := elem.GetLeaflistStrValue()
+						s += fmt.Sprintf("  leaf_list_value(element): %s\n", llStrValue)
+					}
+				}
+
 			default:
 				s += fmt.Sprintf("  default: %v\n", value)
 			}
