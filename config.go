@@ -56,7 +56,7 @@ type VendorSchema struct {
 	Path string `json:"path"`
 }
 
-//LogConfig is config struct for logging
+// LogConfig is config struct for logging
 type LogConfig struct {
 	File          string `json:"file"`
 	PeriodicStats int    `json:"periodic-stats"`
@@ -70,7 +70,7 @@ type APIConfig struct {
 	Port int `json:"port"`
 }
 
-//GRPCConfig is to specify GRPC params
+// GRPCConfig is to specify GRPC params
 type GRPCConfig struct {
 	WS           int32              `json:"ws"`
 	TunnelServer TunnelServerConfig `json:"tunnel-server"`
@@ -94,10 +94,12 @@ type TLSConfig struct {
 
 // PathsConfig to specify subscription path, reporting-interval (freq), etc,.
 type PathsConfig struct {
-	Path   string `json:"path"`
-	Freq   uint64 `json:"freq"`
-	Mode   string `json:"mode"`
-	Origin string `json:"origin"`
+	Path    string `json:"path"`
+	Freq    uint64 `json:"freq"`
+	Mode    string `json:"mode"`
+	Origin  string `json:"origin"`
+	PreGnmi bool   `json:"pre-gnmi"`
+	GNMI    bool   `json:"gnmi"`
 }
 
 // NewJTIMONConfigFilelist to return configfilelist object

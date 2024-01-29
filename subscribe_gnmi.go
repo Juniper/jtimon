@@ -14,10 +14,10 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/Juniper/jtimon/dialout"
 	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 	"github.com/influxdata/influxdb/client/v2"
-	"github.com/Juniper/jtimon/dialout"
 	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
@@ -419,7 +419,7 @@ func xPathsTognmiSubscription(pathsCfg []PathsConfig, dialOutpathsCfg []*dialout
 //
 // In case of SIGHUP, the paths are formed again and streaming
 // is restarted.
-func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx) SubErrorCode {
+func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config) SubErrorCode {
 	var (
 		subs gnmi.SubscriptionList
 		sub  = gnmi.SubscribeRequest_Subscribe{Subscribe: &subs}
@@ -448,7 +448,7 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx) SubErrorCode {
 	}
 
 	// Form subscription from xpaths config
-	subs.Subscription, err = xPathsTognmiSubscription(jctx.config.Paths, nil)
+	subs.Subscription, err = xPathsTognmiSubscription(cfg.Paths, nil)
 	if err != nil {
 		jLog(jctx, fmt.Sprintf("gNMI host: %v, Invalid path: %v", hostname, err))
 		// To make worker absorb any further config changes

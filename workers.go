@@ -16,11 +16,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Juniper/jtimon/dialout"
+	"github.com/Juniper/jtimon/gnmi/gnmi"
 	"github.com/Shopify/sarama"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/golang/protobuf/proto"
-	"github.com/Juniper/jtimon/dialout"
-	"github.com/Juniper/jtimon/gnmi/gnmi"
 	tpb "github.com/openconfig/grpctunnel/proto/tunnel"
 	"github.com/openconfig/grpctunnel/tunnel"
 	"google.golang.org/grpc"
@@ -275,9 +275,9 @@ func NewJWorker(file string, wg *sync.WaitGroup, wsChan chan string) (*JWorker, 
 	log.Printf("%v, jctx.config.Kafka.producer: %v", jctx.config.Host, jctx.config.Kafka)
 	if alias, err := NewAlias(jctx.config.Alias); err == nil {
 		jctx.alias = alias
-        } else {
+	} else {
 		jLog(&jctx, fmt.Sprintf("New alias creation failed for %v, err: %v", jctx.config.Host, err))
-        }
+	}
 	go func() {
 		if *dialOut {
 			// Publish the initial config for dial-out
@@ -512,17 +512,25 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 		log.Printf("new session established for target: %s\n", dialTarget)
 
 		var (
-			retry   bool
-			opts    []grpc.DialOption
-			tryGnmi bool
+			retry          bool
+			opts           []grpc.DialOption
+			tryGnmi        bool
+			tryPrePostGnmi bool
+			loginCheck     bool
 		)
 
 		if jctx.config.Vendor.Gnmi != nil {
 			tryGnmi = true
 		}
 
+		tryPrePostGnmi = false
+		for _, p := range jctx.config.Paths {
+			if p.PreGnmi || p.GNMI {
+				tryPrePostGnmi = true
+			}
+		}
 	connect:
-		vendor, err := getVendor(jctx, tryGnmi)
+		vendor, err := getVendor(jctx, tryGnmi, tryPrePostGnmi)
 		if err != nil {
 			log.Fatalf("Could not get the vendor: %v", err)
 		}
@@ -557,9 +565,20 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 		}
 		fmt.Printf("Successfully dialed target %s(%s)", dialTargetCfg, dialTargetType)
 
+		loginCheck = false
+		if tryPrePostGnmi {
+			if !tryGnmi {
+				loginCheck = true
+			}
+			for _, p := range jctx.config.Paths {
+				if p.PreGnmi {
+					loginCheck = true
+				}
+			}
+		}
 		// we are able to Dial grpc, now let's begin by sending LoginCheck
 		// if required.
-		if vendor.loginCheckRequired {
+		if vendor.loginCheckRequired || loginCheck {
 			if err := vendor.sendLoginCheck(jctx, conn); err != nil {
 				jLog(jctx, fmt.Sprintf("%v", err))
 				time.Sleep(10 * time.Second)
@@ -578,7 +597,8 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 			panic(fmt.Sprintf("could not found subscribe implementation for vendor %s", vendor.name))
 		}
 		fmt.Println("Calling subscribe() :::", jctx.file)
-		code := vendor.subscribe(conn, jctx)
+		subscribeConfig := jctx.config
+		code := vendor.subscribe(conn, jctx, subscribeConfig)
 		fmt.Println("Returns subscribe() :::", jctx.file, "CODE ::: ", code)
 
 		// close the current connection and retry
@@ -637,18 +657,27 @@ func work(jctx *JCtx, statusch chan struct{}) {
 	}
 
 	var (
-		retry   bool
-		opts    []grpc.DialOption
-		tryGnmi bool
+		retry          bool
+		opts           []grpc.DialOption
+		tryGnmi        bool
+		tryPrePostGnmi bool
+		loginCheck     bool
 	)
 
 	if jctx.config.Vendor.Gnmi != nil {
 		tryGnmi = true
 	}
 
+	tryPrePostGnmi = false
+	for _, p := range jctx.config.Paths {
+		if p.PreGnmi || p.GNMI {
+			tryPrePostGnmi = true
+		}
+	}
+
 connect:
 	// Read the host-name and vendor from the config as they might be changed
-	vendor, err := getVendor(jctx, tryGnmi)
+	vendor, err := getVendor(jctx, tryGnmi, tryPrePostGnmi)
 	if err != nil {
 		jLog(jctx, fmt.Sprintf("%v", err))
 		time.Sleep(10 * time.Second)
@@ -697,9 +726,23 @@ connect:
 		goto connect
 	}
 
+	// Sets loginCheck for case where tryPrePostGnmi is true. In this case,
+	// loginCheck is set to true if any of the path has PreGnmi set to true
+	loginCheck = false
+	if tryPrePostGnmi {
+		if !tryGnmi {
+			loginCheck = true
+		}
+		for _, p := range jctx.config.Paths {
+			if p.PreGnmi {
+				loginCheck = true
+			}
+		}
+	}
+
 	// we are able to Dial grpc, now let's begin by sending LoginCheck
 	// if required.
-	if vendor.loginCheckRequired {
+	if vendor.loginCheckRequired || loginCheck {
 		if err := vendor.sendLoginCheck(jctx, conn); err != nil {
 			jLog(jctx, fmt.Sprintf("%v", err))
 			time.Sleep(10 * time.Second)
@@ -718,7 +761,8 @@ connect:
 		panic(fmt.Sprintf("could not found subscribe implementation for vendor %s", vendor.name))
 	}
 	fmt.Println("Calling subscribe() :::", jctx.file)
-	code := vendor.subscribe(conn, jctx)
+	subscribeConfig := jctx.config
+	code := vendor.subscribe(conn, jctx, subscribeConfig)
 	fmt.Println("Returns subscribe() :::", jctx.file, "CODE ::: ", code)
 
 	// close the current connection and retry
