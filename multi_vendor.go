@@ -12,7 +12,7 @@ type vendor struct {
 	loginCheckRequired bool
 	sendLoginCheck     func(*JCtx, *grpc.ClientConn) error
 	dialExt            func(*JCtx) grpc.DialOption
-	subscribe          func(conn *grpc.ClientConn, jctx *JCtx, cfg Config) SubErrorCode
+	subscribe          func(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsConfig) SubErrorCode
 }
 
 func getVendor(jctx *JCtx, tryGnmi bool, tryPrePostGnmi bool) (*vendor, error) {
@@ -20,7 +20,8 @@ func getVendor(jctx *JCtx, tryGnmi bool, tryPrePostGnmi bool) (*vendor, error) {
 
 	if tryGnmi {
 		name = "gnmi"
-	} else if tryPrePostGnmi {
+	}
+	if tryPrePostGnmi {
 		name = "pre-post-gnmi"
 	}
 	// juniper-junos is default
@@ -69,26 +70,26 @@ func newPrePostGNMI() *vendor {
 	return &vendor{
 		name:               "pre-post-gnmi",
 		loginCheckRequired: false,
-		sendLoginCheck:     nil,
+		sendLoginCheck:     loginCheckJunos,
 		dialExt:            nil,
 		subscribe:          subscribePrePostGNMI,
 	}
 }
 
-func subscribePrePostGNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config) SubErrorCode {
+func subscribePrePostGNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsConfig) SubErrorCode {
 	// Create channels for receiving results
 	gnmiResultCh := make(chan SubErrorCode)
 	junosResultCh := make(chan SubErrorCode)
 
 	// Launch goroutines for each subscription function
 	go func() {
-		cfg.Paths = getGnmiPaths(cfg)
-		gnmiResultCh <- subscribegNMI(conn, jctx, cfg)
+		gnmiPaths := getGnmiPaths(cfg)
+		gnmiResultCh <- subscribegNMI(conn, jctx, cfg, gnmiPaths)
 	}()
 
 	go func() {
-		cfg.Paths = getPreGnmiPaths(cfg)
-		junosResultCh <- subscribeJunos(conn, jctx, cfg)
+		preGnmiPaths := getPreGnmiPaths(cfg)
+		junosResultCh <- subscribeJunos(conn, jctx, cfg, preGnmiPaths)
 	}()
 
 	// Use select to wait for the first result to be available
@@ -105,7 +106,7 @@ func subscribePrePostGNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config) SubErro
 func getGnmiPaths(config Config) []PathsConfig {
 	var paths []PathsConfig
 	for _, p := range config.Paths {
-		if p.GNMI || (config.Vendor.Gnmi != nil && !p.PreGnmi) {
+		if p.Gnmi || (config.Vendor.Gnmi != nil && !p.PreGnmi) {
 			paths = append(paths, p)
 		}
 	}
@@ -115,7 +116,7 @@ func getGnmiPaths(config Config) []PathsConfig {
 func getPreGnmiPaths(config Config) []PathsConfig {
 	var paths []PathsConfig
 	for _, p := range config.Paths {
-		if p.PreGnmi || (config.Vendor.Gnmi == nil && !p.GNMI) {
+		if p.PreGnmi || (config.Vendor.Gnmi == nil && !p.Gnmi) {
 			paths = append(paths, p)
 		}
 	}

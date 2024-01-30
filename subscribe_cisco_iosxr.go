@@ -291,7 +291,7 @@ func handleOnePath(schema *schema, id int64, path string, conn *grpc.ClientConn,
 	}
 }
 
-func subscribeXR(conn *grpc.ClientConn, jctx *JCtx, cfg Config) SubErrorCode {
+func subscribeXR(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsConfig) SubErrorCode {
 	schema, err := getXRSchema(jctx)
 	if err != nil {
 		jLog(jctx, fmt.Sprintf("%s", err))
@@ -306,7 +306,7 @@ func subscribeXR(conn *grpc.ClientConn, jctx *JCtx, cfg Config) SubErrorCode {
 		jLog(jctx, fmt.Sprintf("can not convert CID - %s to int64", jctx.config.CID))
 	}
 
-	for index, path := range cfg.Paths {
+	for index, path := range paths {
 		go handleOnePath(schema, id+int64(index), path.Path, conn, jctx, datach)
 	}
 

@@ -419,7 +419,7 @@ func xPathsTognmiSubscription(pathsCfg []PathsConfig, dialOutpathsCfg []*dialout
 //
 // In case of SIGHUP, the paths are formed again and streaming
 // is restarted.
-func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config) SubErrorCode {
+func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsConfig) SubErrorCode {
 	var (
 		subs gnmi.SubscriptionList
 		sub  = gnmi.SubscribeRequest_Subscribe{Subscribe: &subs}
@@ -448,7 +448,7 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config) SubErrorCode {
 	}
 
 	// Form subscription from xpaths config
-	subs.Subscription, err = xPathsTognmiSubscription(cfg.Paths, nil)
+	subs.Subscription, err = xPathsTognmiSubscription(paths, nil)
 	if err != nil {
 		jLog(jctx, fmt.Sprintf("gNMI host: %v, Invalid path: %v", hostname, err))
 		// To make worker absorb any further config changes

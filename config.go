@@ -99,7 +99,7 @@ type PathsConfig struct {
 	Mode    string `json:"mode"`
 	Origin  string `json:"origin"`
 	PreGnmi bool   `json:"pre-gnmi"`
-	GNMI    bool   `json:"gnmi"`
+	Gnmi    bool   `json:"gnmi"`
 }
 
 // NewJTIMONConfigFilelist to return configfilelist object

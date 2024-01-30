@@ -525,7 +525,7 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 
 		tryPrePostGnmi = false
 		for _, p := range jctx.config.Paths {
-			if p.PreGnmi || p.GNMI {
+			if p.PreGnmi || p.Gnmi {
 				tryPrePostGnmi = true
 			}
 		}
@@ -598,7 +598,7 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 		}
 		fmt.Println("Calling subscribe() :::", jctx.file)
 		subscribeConfig := jctx.config
-		code := vendor.subscribe(conn, jctx, subscribeConfig)
+		code := vendor.subscribe(conn, jctx, subscribeConfig, subscribeConfig.Paths)
 		fmt.Println("Returns subscribe() :::", jctx.file, "CODE ::: ", code)
 
 		// close the current connection and retry
@@ -670,7 +670,7 @@ func work(jctx *JCtx, statusch chan struct{}) {
 
 	tryPrePostGnmi = false
 	for _, p := range jctx.config.Paths {
-		if p.PreGnmi || p.GNMI {
+		if p.PreGnmi || p.Gnmi {
 			tryPrePostGnmi = true
 		}
 	}
@@ -762,7 +762,7 @@ connect:
 	}
 	fmt.Println("Calling subscribe() :::", jctx.file)
 	subscribeConfig := jctx.config
-	code := vendor.subscribe(conn, jctx, subscribeConfig)
+	code := vendor.subscribe(conn, jctx, subscribeConfig, subscribeConfig.Paths)
 	fmt.Println("Returns subscribe() :::", jctx.file, "CODE ::: ", code)
 
 	// close the current connection and retry
