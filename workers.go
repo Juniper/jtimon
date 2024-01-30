@@ -730,11 +730,11 @@ connect:
 	// loginCheck is set to true if any of the path has PreGnmi set to true
 	loginCheck = false
 	if tryPrePostGnmi {
-		if !tryGnmi {
-			loginCheck = true
-		}
 		for _, p := range jctx.config.Paths {
-			if p.PreGnmi {
+			// if vendor is not configured as well as pre-gnmi and gnmi is not
+			// configured then set loginCheck as true. if pre-gnmi is configured
+			// then set loginCheck as true
+			if p.PreGnmi || (!tryGnmi && !p.PreGnmi && !p.Gnmi) {
 				loginCheck = true
 			}
 		}
