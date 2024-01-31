@@ -50,7 +50,9 @@ Running config of JTIMON:
             "path": "sub_wdsysmon-fd",
             "freq": 10000,
             "mode": "",
-            "origin": ""
+            "origin": "",
+            "pre-gnmi": false,
+            "gnmi": false
         }
     ],
     "log": {

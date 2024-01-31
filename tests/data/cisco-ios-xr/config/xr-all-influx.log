@@ -50,7 +50,9 @@ Running config of JTIMON:
             "path": "SUB_JTIMON_ALL",
             "freq": 10000,
             "mode": "",
-            "origin": ""
+            "origin": "",
+            "pre-gnmi": false,
+            "gnmi": false
         }
     ],
     "log": {
