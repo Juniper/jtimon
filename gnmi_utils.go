@@ -312,6 +312,7 @@ func gnmiParseValue(gnmiValue *gnmi.TypedValue, ts bool, enableUint bool) (inter
 		value = gnmiValue.GetAsciiVal()
 	case *gnmi.TypedValue_AnyVal:
 		value = gnmiValue.GetAnyVal()
+	//case *gnmi.TypedValue_DoubleVal:
 	case *gnmi.TypedValue_DecimalVal:
 		var floatVal float64
 		d64Val := gnmiValue.GetDecimalVal()
