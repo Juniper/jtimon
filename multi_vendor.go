@@ -2,25 +2,27 @@ package main
 
 import (
 	"fmt"
-
 	"google.golang.org/grpc"
 )
 
-var vendors = []*vendor{newGNMI(), newJuniperJUNOS(), newCiscoIOSXR()}
+var vendors = []*vendor{newGNMI(), newJuniperJUNOS(), newCiscoIOSXR(), newPrePostGNMI()}
 
 type vendor struct {
 	name               string
 	loginCheckRequired bool
 	sendLoginCheck     func(*JCtx, *grpc.ClientConn) error
 	dialExt            func(*JCtx) grpc.DialOption
-	subscribe          func(*grpc.ClientConn, *JCtx) SubErrorCode
+	subscribe          func(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsConfig) SubErrorCode
 }
 
-func getVendor(jctx *JCtx, tryGnmi bool) (*vendor, error) {
+func getVendor(jctx *JCtx, tryGnmi bool, tryPrePostGnmi bool) (*vendor, error) {
 	name := jctx.config.Vendor.Name
 
 	if tryGnmi {
 		name = "gnmi"
+	}
+	if tryPrePostGnmi {
+		name = "pre-post-gnmi"
 	}
 	// juniper-junos is default
 	if name == "" {
@@ -62,4 +64,61 @@ func newGNMI() *vendor {
 		dialExt:            nil,
 		subscribe:          subscribegNMI,
 	}
+}
+
+func newPrePostGNMI() *vendor {
+	return &vendor{
+		name:               "pre-post-gnmi",
+		loginCheckRequired: false,
+		sendLoginCheck:     loginCheckJunos,
+		dialExt:            nil,
+		subscribe:          subscribePrePostGNMI,
+	}
+}
+
+func subscribePrePostGNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsConfig) SubErrorCode {
+	// Create channels for receiving results
+	gnmiResultCh := make(chan SubErrorCode)
+	junosResultCh := make(chan SubErrorCode)
+
+	// Launch goroutines for each subscription function
+	go func() {
+		gnmiPaths := getGnmiPaths(cfg)
+		gnmiResultCh <- subscribegNMI(conn, jctx, cfg, gnmiPaths)
+	}()
+
+	go func() {
+		preGnmiPaths := getPreGnmiPaths(cfg)
+		junosResultCh <- subscribeJunos(conn, jctx, cfg, preGnmiPaths)
+	}()
+
+	// Use select to wait for the first result to be available
+	select {
+	case result := <-gnmiResultCh:
+		// Process result from subscribeGNMI
+		return result
+	case result := <-junosResultCh:
+		// Process result from subscribeJunos
+		return result
+	}
+}
+
+func getGnmiPaths(config Config) []PathsConfig {
+	var paths []PathsConfig
+	for _, p := range config.Paths {
+		if p.Gnmi || (config.Vendor.Gnmi != nil && !p.PreGnmi) {
+			paths = append(paths, p)
+		}
+	}
+	return paths
+}
+
+func getPreGnmiPaths(config Config) []PathsConfig {
+	var paths []PathsConfig
+	for _, p := range config.Paths {
+		if p.PreGnmi || (config.Vendor.Gnmi == nil && !p.Gnmi) {
+			paths = append(paths, p)
+		}
+	}
+	return paths
 }

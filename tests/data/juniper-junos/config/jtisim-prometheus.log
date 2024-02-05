@@ -50,7 +50,9 @@ Running config of JTIMON:
             "path": "/interfaces",
             "freq": 20000,
             "mode": "",
-            "origin": ""
+            "origin": "",
+            "pre-gnmi": false,
+            "gnmi": false
         }
     ],
     "log": {
@@ -81,14 +83,14 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Fri Oct  6 08:30:45 PDT 2023 |               1980 |                 40 |              87418 |              87618 |
+| Tue Jan 30 21:09:45 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri Oct  6 08:30:47 PDT 2023 |               1980 |                 40 |              87418 |              87618 |
+| Tue Jan 30 21:09:47 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 6.0148505s)
+Collector Stats for 127.0.0.1:50051 (Run time : 6.002795041s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)

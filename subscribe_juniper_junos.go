@@ -105,11 +105,11 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 }
 
 // subSendAndReceive handles the following
-// 		- Opens up a stream for receiving the telemetry data
-//		- Handles SIGHUP by terminating the current stream and requests the
-//		  	caller to restart the streaming by setting the corresponding return
-//			code
-//		- In case of an error, Set the error code to restart the connection.
+//   - Opens up a stream for receiving the telemetry data
+//   - Handles SIGHUP by terminating the current stream and requests the
+//     caller to restart the streaming by setting the corresponding return
+//     code
+//   - In case of an error, Set the error code to restart the connection.
 func subSendAndReceive(conn *grpc.ClientConn, jctx *JCtx,
 	subReqM na_pb.SubscriptionRequest) SubErrorCode {
 
@@ -221,12 +221,12 @@ func subSendAndReceive(conn *grpc.ClientConn, jctx *JCtx,
 //
 // In case of SIGHUP, the paths are formed again and streaming
 // is restarted.
-func subscribeJunos(conn *grpc.ClientConn, jctx *JCtx) SubErrorCode {
+func subscribeJunos(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsConfig) SubErrorCode {
 	var subReqM na_pb.SubscriptionRequest
 	var additionalConfigM na_pb.SubscriptionAdditionalConfig
 
-	cfg := &jctx.config
-	for i := range cfg.Paths {
+	//cfg := &jctx.config
+	for i := range paths {
 		var pathM na_pb.Path
 		pathM.Path = cfg.Paths[i].Path
 		pathM.SampleFrequency = uint32(cfg.Paths[i].Freq)

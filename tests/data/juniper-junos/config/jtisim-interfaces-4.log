@@ -50,7 +50,9 @@ Running config of JTIMON:
             "path": "/interfaces",
             "freq": 10000,
             "mode": "",
-            "origin": ""
+            "origin": "",
+            "pre-gnmi": false,
+            "gnmi": false
         }
     ],
     "log": {
@@ -78,7 +80,7 @@ compression = none
 Reconnecting to 127.0.0.1:90052
 
 
-Collector Stats for 127.0.0.1:90052 (Run time : 10.003562792s)
+Collector Stats for 127.0.0.1:90052 (Run time : 10.020067417s)
 0            : in-packets
 0            : data points (KV pairs)
 0            : in-header wirelength (bytes)
