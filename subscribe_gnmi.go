@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -363,7 +364,26 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 				jGnmiHdr = "updates header{" + parseOutput.jHeader.hdr.String() + "}"
 			} else {
 				jGnmiHdr = "extension header{" + parseOutput.jHeader.hdrExt.String() + "}"
+				var jHeaderData map[string]interface{}
+				jGnmiHdrExt, err := json.Marshal(parseOutput.jHeader.hdrExt)
+				if err != nil {
+					return errors.New("unable to Marshal Juniper extension header")
+				}
+				err = json.Unmarshal(jGnmiHdrExt, &jHeaderData)
+				if err != nil {
+					return errors.New("unable to decode Juniper extension header")
+				}
+				for k, v := range jHeaderData {
+					strVal := convertToString(v)
+					if strVal == "Unsupported type" {
+						jLog(jctx, fmt.Sprintf(".Skip Adding juniper Header Extension: %s "+
+							"to Tags. Unable to convert extension value: %v to string. ", k, v))
+						continue
+					}
+					parseOutput.kvpairs[k] = strVal
+				}
 			}
+
 		}
 
 		jLog(jctx, fmt.Sprintf("prefix: %v, kvpairs: %v, xpathVal: %v, juniperXpathVal: %v, juniperhdr: %v, measurement: %v, rsp: %v\n\n",
