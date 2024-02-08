@@ -42,8 +42,8 @@ func (s *JTISim) Start() error {
 		authServer := &authServer{}
 
 		apb.RegisterLoginServer(grpcServer, authServer)
-		tpb.RegisterOpenConfigTelemetryServer(grpcServer, &server{s})
-		gnmipb.RegisterGNMIServer(grpcServer, &server{s})
+		tpb.RegisterOpenConfigTelemetryServer(grpcServer, &server{jtisim: s})
+		gnmipb.RegisterGNMIServer(grpcServer, &server{jtisim: s})
 
 		grpcServer.Serve(lis)
 	} else {
@@ -53,6 +53,7 @@ func (s *JTISim) Start() error {
 }
 
 type server struct {
+	gnmipb.UnimplementedGNMIServer
 	jtisim *JTISim
 }
 type authServer struct {
@@ -159,9 +160,9 @@ func (s *server) Subscribe(stream gnmipb.GNMI_SubscribeServer) error {
 		log.Fatalf("Only STREAM mode supported, received %v", subReq.GetMode())
 	}
 
-	if subReq.GetUseAliases() {
-		log.Fatalf("Aliases not supported, received %v", subReq.GetUseAliases())
-	}
+	// if subReq.GetUseAliases() {
+	// 	log.Fatalf("Aliases not supported, received %v", subReq.GetUseAliases())
+	// }
 
 	stream.Send(&gnmipb.SubscribeResponse{Response: &gnmipb.SubscribeResponse_SyncResponse{SyncResponse: true}})
 	ch := make(chan *gnmipb.SubscribeResponse)
