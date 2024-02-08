@@ -373,14 +373,15 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 				if err != nil {
 					return errors.New("unable to decode Juniper extension header")
 				}
-				for k, v := range jHeaderData {
-					strVal := convertToString(v)
+				jHeaderKeyToTags := []string{"component", "component_id", "sub_component_id"}
+				for _, v := range jHeaderKeyToTags {
+					strVal := convertToString(jHeaderData[v])
 					if strVal == "Unsupported type" {
 						jLog(jctx, fmt.Sprintf(".Skip Adding juniper Header Extension: %s "+
-							"to Tags. Unable to convert extension value: %v to string. ", k, v))
+							"to Tags. Unable to convert extension value: %v to string. ", v, jHeaderData[v]))
 						continue
 					}
-					parseOutput.kvpairs[k] = strVal
+					parseOutput.kvpairs[v] = strVal
 				}
 			}
 
