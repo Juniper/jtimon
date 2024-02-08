@@ -375,13 +375,15 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 				}
 				jHeaderKeyToTags := []string{"component", "component_id", "sub_component_id"}
 				for _, v := range jHeaderKeyToTags {
-					strVal := convertToString(jHeaderData[v])
-					if strVal == "Unsupported type" {
-						jLog(jctx, fmt.Sprintf(".Skip Adding juniper Header Extension: %s "+
-							"to Tags. Unable to convert extension value: %v to string. ", v, jHeaderData[v]))
-						continue
+					if _, ok := jHeaderData[v]; ok {
+						strVal := convertToString(jHeaderData[v])
+						if strVal == "Unsupported type" {
+							jLog(jctx, fmt.Sprintf(".Skip Adding juniper Header Extension: %s "+
+								"to Tags. Unable to convert extension value: %v to string. ", v, jHeaderData[v]))
+							continue
+						}
+						parseOutput.kvpairs[v] = strVal
 					}
-					parseOutput.kvpairs[v] = strVal
 				}
 			}
 
