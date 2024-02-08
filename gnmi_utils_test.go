@@ -67,10 +67,10 @@ func TestXPathTognmiPath(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			gnmiPath, err := xPathTognmiPath(test.xpath)
 			if !test.err {
-				if err != nil || !reflect.DeepEqual(*test.path, *gnmiPath) {
+				if err != nil || !reflect.DeepEqual(test.path, gnmiPath) {
 					var errMsg string
 					if err == nil {
-						errMsg = fmt.Sprintf("\nexpected:%v\nGot:%v", *test.path, *gnmiPath)
+						errMsg = fmt.Sprintf("\nexpected:%v\nGot:%v", test.path, gnmiPath)
 					} else {
 						errMsg = fmt.Sprintf("Not an error, but got an error: %v", err)
 					}
@@ -79,10 +79,10 @@ func TestXPathTognmiPath(t *testing.T) {
 			}
 
 			if test.err {
-				if err == nil && reflect.DeepEqual(*test.path, *gnmiPath) {
+				if err == nil && reflect.DeepEqual(test.path, gnmiPath) {
 					var errMsg string
 					errMsg = fmt.Sprintf("want error but got nil\n")
-					errMsg += fmt.Sprintf("\nexpected:%v\nGot:%v\n", *test.path, *gnmiPath)
+					errMsg += fmt.Sprintf("\nexpected:%v\nGot:%v\n", test.path, gnmiPath)
 					t.Errorf(errMsg)
 				}
 			}
