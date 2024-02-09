@@ -82,54 +82,54 @@ gRPC headers from host 127.0.0.1:50051
   content-type: [application/grpc]
   jtisim: [yes]
 Receiving telemetry data from 127.0.0.1:50051
+Batch processing: #packets:40 #points:40
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Thu Feb  8 15:18:50 PST 2024 |               1980 |                 40 |              87418 |              87618 |
-
-Batch processing: #packets:40 #points:40
-Batch write successful! Post batch write available points:  0
-
-| Thu Feb  8 15:18:52 PST 2024 |               1980 |                 40 |              87418 |              87618 |
-
-
-| Thu Feb  8 15:18:54 PST 2024 |               1980 |                 40 |              87418 |              87618 |
-
-
-| Thu Feb  8 15:18:56 PST 2024 |               1980 |                 40 |              87418 |              87618 |
-
-
-| Thu Feb  8 15:18:58 PST 2024 |               1980 |                 40 |              87418 |              87618 |
-
-Batch processing: #packets:40 #points:40
-
-| Thu Feb  8 15:19:00 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri Feb  9 03:27:59 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 Batch write successful! Post batch write available points:  0
 
-| Thu Feb  8 15:19:02 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri Feb  9 03:28:01 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Thu Feb  8 15:19:04 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri Feb  9 03:28:03 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Thu Feb  8 15:19:06 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri Feb  9 03:28:05 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Thu Feb  8 15:19:08 PST 2024 |               4634 |                 94 |             204422 |             204892 |
+| Fri Feb  9 03:28:07 PST 2024 |               2456 |                 50 |             108260 |             108510 |
 
 Batch processing: #packets:40 #points:40
 
-| Thu Feb  8 15:19:10 PST 2024 |               5940 |                120 |             262258 |             262858 |
+| Fri Feb  9 03:28:09 PST 2024 |               3960 |                 80 |             174838 |             175238 |
 
 Batch write successful! Post batch write available points:  0
 
-| Thu Feb  8 15:19:12 PST 2024 |               5940 |                120 |             262258 |             262858 |
+| Fri Feb  9 03:28:11 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Fri Feb  9 03:28:13 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Fri Feb  9 03:28:15 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Fri Feb  9 03:28:17 PST 2024 |               5881 |                119 |             259566 |             260161 |
+
+Batch processing: #packets:40 #points:40
+
+| Fri Feb  9 03:28:19 PST 2024 |               5940 |                120 |             262258 |             262858 |
+
+Batch write successful! Post batch write available points:  0
+
+| Fri Feb  9 03:28:21 PST 2024 |               5940 |                120 |             262258 |             262858 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 25.003581459s)
+Collector Stats for 127.0.0.1:50051 (Run time : 25.001658041s)
 120          : in-packets
 5940         : data points (KV pairs)
 25           : in-header wirelength (bytes)
