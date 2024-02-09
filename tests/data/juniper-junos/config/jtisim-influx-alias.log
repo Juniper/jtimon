@@ -85,22 +85,19 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Mon Feb  5 15:09:51 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Thu Feb  8 15:19:15 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 Batch write successful! Post batch write available points:  0
 
-| Mon Feb  5 15:09:53 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Thu Feb  8 15:19:17 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Feb  5 15:09:55 PST 2024 |               1980 |                 40 |              87418 |              87618 |
-
-
-| Mon Feb  5 15:09:57 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Thu Feb  8 15:19:19 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 8.005585375s)
+Collector Stats for 127.0.0.1:50051 (Run time : 8.002880083s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)
