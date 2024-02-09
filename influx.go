@@ -473,6 +473,8 @@ func addIDB(ocData *na_pb.OpenConfigData, jctx *JCtx, rtime time.Time) {
 
 		tags["device"] = cfg.Host
 		tags["sensor"] = ocData.Path
+		tags["component_id"] = convertToString(interface{}(ocData.ComponentId))
+		tags["sub_component_id"] = convertToString(interface{}(ocData.SubComponentId))
 
 		switch v.Value.(type) {
 		case *na_pb.KeyValue_StrValue:
