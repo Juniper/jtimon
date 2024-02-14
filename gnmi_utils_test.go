@@ -15,6 +15,87 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
+
+func TestParseKeyValuePairs(t *testing.T) {
+    tests := []struct {
+        name string
+        input string
+        wantPrefix string
+        want map[string]string
+    }{
+        {
+            name: "Test 1",
+            input: `foo["k1" = "v1"]["k2" = "v2"]`,
+            wantPrefix: "foo",
+            want: map[string]string{
+                "k1": "v1",
+                "k2": "v2",
+            },
+        },
+        {
+            name: "Test 2",
+            input: `bar["k3" = "v3"]["k4" = "v4"]`,
+            wantPrefix: "bar",
+            want: map[string]string{
+                "k3": "v3",
+                "k4": "v4",
+            },
+        },
+        {
+            name: "Test 3",
+            input: `foo["k1" = "v1"]["k2" = "v2"]["k3" = "v3"]`,
+            wantPrefix: "foo",
+            want: map[string]string{
+                "k1": "v1",
+                "k2": "v2",
+                "k3": "v3",
+            },
+        },
+        {
+            name: "Test 4 - Only Prefix",
+            input: `baz`,
+            wantPrefix: "baz",
+            want: map[string]string{},
+        },
+        {
+            name: "Test 5 - Multiple Pairs in Same Brackets",
+            input: `foo["k1" = "v1" and "k2" = "v2"]`,
+            wantPrefix: "foo",
+            want: map[string]string{
+                "k1": "v1",
+                "k2": "v2",
+            },
+        },
+        {
+            name: "Test 6 - Three Pairs in Same Brackets",
+            input: `foo["k1" = "v1" and "k2" = "v2" and "k3" = "v3"]`,
+            wantPrefix: "foo",
+            want: map[string]string{
+                "k1": "v1",
+                "k2": "v2",
+                "k3": "v3",
+            },
+        },
+        {
+            name: "Test 7 - Key Without Quotes",
+            input: `foo[k1 = "v1"]`,
+            wantPrefix: "foo",
+            want: map[string]string{
+                "k1": "v1",
+            },
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            gotPrefix, got := parseKeyValuePairs(tt.input)
+            if gotPrefix != tt.wantPrefix || !reflect.DeepEqual(got, tt.want) {
+                t.Errorf("parseKeyValuePairs() = %v, %v, want %v, %v", gotPrefix, got, tt.wantPrefix, tt.want)
+            }
+        })
+    }
+}
+
 func TestXPathTognmiPath(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -22,6 +103,29 @@ func TestXPathTognmiPath(t *testing.T) {
 		err   bool
 		path  *gnmi.Path
 	}{
+		{
+			name:  "no-keys",
+			xpath: "/interfaces/interface",
+			err:   false,
+			path: &gnmi.Path{Origin: "",
+				Elem: []*gnmi.PathElem{
+					{Name: "interfaces"},
+					{Name: "interface"},
+				},
+			},
+		},
+		{
+			name:  "one-key",
+			xpath: "/interfaces/interface[k1=v1]",
+			err:   false,
+			path: &gnmi.Path{Origin: "",
+				Elem: []*gnmi.PathElem{
+					{Name: "interfaces"},
+					{Name: "interface", Key: map[string]string{"k1": "v1"}},
+				},
+			},
+		},
+
 		{
 			name:  "multi-level-multi-keys",
 			xpath: "/interfaces/interface[k1=\"foo\"]/subinterfaces/subinterface[k1=\"foo1\" and k2=\"bar1\"]",
@@ -32,6 +136,18 @@ func TestXPathTognmiPath(t *testing.T) {
 					{Name: "interface", Key: map[string]string{"k1": "foo"}},
 					{Name: "subinterfaces"},
 					{Name: "subinterface", Key: map[string]string{"k1": "foo1", "k2": "bar1"}},
+				},
+			},
+		},
+
+		{
+			name:  "multi-keys-nostd",
+			xpath: "/interfaces/interface[k1=\"v1\"][k2=\"v2\"]",
+			err:   false,
+			path: &gnmi.Path{Origin: "",
+				Elem: []*gnmi.PathElem{
+					{Name: "interfaces"},
+					{Name: "interface", Key: map[string]string{"k1": "v1", "k2": "v2"}},
 				},
 			},
 		},
@@ -81,7 +197,7 @@ func TestXPathTognmiPath(t *testing.T) {
 			if test.err {
 				if err == nil && reflect.DeepEqual(test.path, gnmiPath) {
 					var errMsg string
-					errMsg = fmt.Sprintf("want error but got nil\n")
+					errMsg = "want error but got nil\n"
 					errMsg += fmt.Sprintf("\nexpected:%v\nGot:%v\n", test.path, gnmiPath)
 					t.Errorf(errMsg)
 				}

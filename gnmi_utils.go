@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"regexp"
 	"strings"
 
 	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
@@ -71,6 +72,50 @@ type gnmiParseOutputT struct {
 	inKvs      uint64
 }
 
+
+// parseKeyValuePairs takes an input string in the format `prefix[key = "value"]`
+// and returns the prefix as a string and the key-value pairs as a map.
+//
+// The input string can contain multiple key-value pairs in the same or different brackets.
+// The keys and values are trimmed of quotes and spaces.
+//
+// If the input string does not contain any brackets, the function returns the entire string 
+// as the prefix and an empty map.
+func parseKeyValuePairs(input string) (string, map[string]string) {
+    // Initialize a map to hold the key-value pairs
+    result := make(map[string]string)
+
+    // Split the input string by the first occurrence of [" to get the prefix and the rest
+    parts := strings.SplitN(input, "[", 2)
+    prefix := parts[0]
+
+    // Match anything inside square brackets
+    re := regexp.MustCompile(`\[(.*?)\]`)
+    matches := re.FindAllString(input, -1)
+
+    for _, match := range matches {
+        // Remove the square brackets
+        match = strings.Trim(match, "[]")
+
+        // Split by "and" to support multiple key-value pairs in the same brackets
+        pairs := strings.Split(match, "and")
+
+        for _, pair := range pairs {
+            // Split by "=" to separate the key and value
+            kv := strings.Split(pair, "=")
+
+            // Trim the quotes and spaces from the key and value
+            key := strings.Trim(kv[0], " \"")
+            value := strings.Trim(kv[1], " \"")
+
+            // Add the key-value pair to the result map
+            result[key] = value
+        }
+    }
+
+    return prefix, result
+}
+
 // Convert xpath to gNMI path
 func xPathTognmiPath(xpath string) (*gnmi.Path, error) {
 	var gpath gnmi.Path
@@ -80,27 +125,34 @@ func xPathTognmiPath(xpath string) (*gnmi.Path, error) {
 			continue
 		}
 
-		kvSplit := strings.Split(s, gXPathTokenIndexBegin)
-		if len(kvSplit) == 1 {
-			gpath.Elem = append(gpath.Elem, &gnmi.PathElem{Name: kvSplit[0]})
+		prefix, kv := parseKeyValuePairs(s)
+		if len(kv) == 0 {
+			gpath.Elem = append(gpath.Elem, &gnmi.PathElem{Name: prefix})
 		} else {
-			gpath.Elem = append(gpath.Elem, &gnmi.PathElem{Name: kvSplit[0], Key: map[string]string{}})
-			kvpairs := strings.Split(kvSplit[1], gXpathTokenMultiIndexSep)
-
-			pe := gpath.Elem[len(gpath.Elem)-1]
-			for _, kvpair := range kvpairs {
-				kvpair = strings.TrimSpace(kvpair)
-				kv := strings.Split(kvpair, gXPathTokenKVSep)
-
-				idxval := strings.TrimPrefix(kv[1], gXPathTokenValueWrapper)
-				if idxval[len(idxval)-1:] != gXPathTokenIndexEnd {
-					idxval = strings.TrimSuffix(idxval, gXPathTokenValueWrapper)
-				} else {
-					idxval = strings.TrimSuffix(idxval, gXPathTokenValueWrapper+gXPathTokenIndexEnd)
-				}
-				pe.Key[kv[0]] = idxval
-			}
+			gpath.Elem = append(gpath.Elem, &gnmi.PathElem{Name: prefix, Key: kv})
 		}
+
+		// kvSplit := strings.Split(s, gXPathTokenIndexBegin)
+		// if len(kvSplit) == 1 {
+		// 	gpath.Elem = append(gpath.Elem, &gnmi.PathElem{Name: kvSplit[0]})
+		// } else {
+		// 	gpath.Elem = append(gpath.Elem, &gnmi.PathElem{Name: kvSplit[0], Key: map[string]string{}})
+		// 	kvpairs := strings.Split(kvSplit[1], gXpathTokenMultiIndexSep)
+
+		// 	pe := gpath.Elem[len(gpath.Elem)-1]
+		// 	for _, kvpair := range kvpairs {
+		// 		kvpair = strings.TrimSpace(kvpair)
+		// 		kv := strings.Split(kvpair, gXPathTokenKVSep)
+
+		// 		idxval := strings.TrimPrefix(kv[1], gXPathTokenValueWrapper)
+		// 		if idxval[len(idxval)-1:] != gXPathTokenIndexEnd {
+		// 			idxval = strings.TrimSuffix(idxval, gXPathTokenValueWrapper)
+		// 		} else {
+		// 			idxval = strings.TrimSuffix(idxval, gXPathTokenValueWrapper+gXPathTokenIndexEnd)
+		// 		}
+		// 		pe.Key[kv[0]] = idxval
+		// 	}
+		// }
 	}
 
 	if len(gpath.Elem) == 0 {

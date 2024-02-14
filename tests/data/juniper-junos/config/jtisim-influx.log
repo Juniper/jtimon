@@ -82,54 +82,54 @@ gRPC headers from host 127.0.0.1:50051
   content-type: [application/grpc]
   jtisim: [yes]
 Receiving telemetry data from 127.0.0.1:50051
-Batch processing: #packets:40 #points:40
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Fri Feb  9 03:27:59 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Feb 14 14:19:29 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
+Batch processing: #packets:40 #points:40
 Batch write successful! Post batch write available points:  0
 
-| Fri Feb  9 03:28:01 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Feb 14 14:19:31 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri Feb  9 03:28:03 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Feb 14 14:19:33 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri Feb  9 03:28:05 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Feb 14 14:19:35 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri Feb  9 03:28:07 PST 2024 |               2456 |                 50 |             108260 |             108510 |
+| Wed Feb 14 14:19:37 PST 2024 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 
-| Fri Feb  9 03:28:09 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Wed Feb 14 14:19:39 PST 2024 |               3960 |                 80 |             174838 |             175238 |
 
 Batch write successful! Post batch write available points:  0
 
-| Fri Feb  9 03:28:11 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Wed Feb 14 14:19:41 PST 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri Feb  9 03:28:13 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Wed Feb 14 14:19:43 PST 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri Feb  9 03:28:15 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Wed Feb 14 14:19:45 PST 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri Feb  9 03:28:17 PST 2024 |               5881 |                119 |             259566 |             260161 |
+| Wed Feb 14 14:19:47 PST 2024 |               4356 |                 88 |             192322 |             192762 |
 
 Batch processing: #packets:40 #points:40
 
-| Fri Feb  9 03:28:19 PST 2024 |               5940 |                120 |             262258 |             262858 |
+| Wed Feb 14 14:19:49 PST 2024 |               5940 |                120 |             262258 |             262858 |
 
 Batch write successful! Post batch write available points:  0
 
-| Fri Feb  9 03:28:21 PST 2024 |               5940 |                120 |             262258 |             262858 |
+| Wed Feb 14 14:19:51 PST 2024 |               5940 |                120 |             262258 |             262858 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 25.001658041s)
+Collector Stats for 127.0.0.1:50051 (Run time : 25.003723666s)
 120          : in-packets
 5940         : data points (KV pairs)
 25           : in-header wirelength (bytes)
