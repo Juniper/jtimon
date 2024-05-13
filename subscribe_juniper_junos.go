@@ -175,6 +175,10 @@ func subSendAndReceive(conn *grpc.ClientConn, jctx *JCtx,
 				handleOnePacket(ocData, jctx)
 			}
 
+			if isInternalJtimonLogging(jctx) {
+				handleOnePacket(ocData, jctx)
+			}
+
 			// to influxdb
 			if *noppgoroutines {
 				addIDB(ocData, jctx, rtime)

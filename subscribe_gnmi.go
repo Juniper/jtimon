@@ -103,7 +103,6 @@ func publishToPrometheus(jctx *JCtx, parseOutput *gnmiParseOutputT) {
  * floats and strings. Influx Line Protocol doesn't support other types
  */
 func publishToInflux(jctx *JCtx, mName string, prefixPath string, kvpairs map[string]string, xpaths map[string]interface{}) error {
-	jLog(jctx, fmt.Sprintf("jctx.influxCtx.influxClient: %v.. ", jctx.influxCtx.influxClient))
 	if !gGnmiUnitTestCoverage && jctx.influxCtx.influxClient == nil {
 		return nil
 	}
@@ -164,7 +163,11 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 	jXpaths := parseOutput.jXpaths
 	xpathVal := parseOutput.xpaths
 
-	// Identify the measurement name
+	/*
+	 * Identify the measurement name, default is prefix path. For juniper packets that have headers,
+	 * it will get overridden with subscribed path if it is present in the header.
+	 */
+	mName = prefixPath + gXPathTokenPathSep // To be compatible with that of OC
 	// Try using the proper gnmi_ext.proto's path in gnmi.proto, now it is manually edited
 	juniperHdrDetails, ok, err = formJuniperTelemetryHdr(jXpaths, rsp.GetExtension())
 	if !ok {
@@ -176,14 +179,16 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 			return nil, errors.New(errMsg)
 		}
 		parseOutput.sensorVal = prefixPath
-		parseOutput.mName = prefixPath + gXPathTokenPathSep // To be compatible with that of OC
+		parseOutput.mName = mName // To be compatible with that of OC
 		tsInMillisecs := (ps / gGnmiFreqToMilli)
 		xpathVal[prefixPath+gXPathTokenPathSep+gGnmiJtimonProducerTsName] = tsInMillisecs
 		xpathVal[gGnmiJtimonDeviceTsName] = tsInMillisecs
+		//fmt.Printf("Vivek.. parseOuput 1: %v", parseOutput)
 		return parseOutput, nil
 	}
 
 	if err != nil {
+		//fmt.Printf("Vivek.. parseOuput 2: %v", parseOutput)
 		return parseOutput, err
 	}
 
@@ -192,7 +197,9 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 		verboseSensorDetails = hdr.GetPath()
 		splits := strings.Split(verboseSensorDetails, gGnmiVerboseSensorDetailsDelim)
 
-		mName = splits[2] // Denotes subscribed path
+		if splits[2] != "" {
+			mName = splits[2] // Denotes subscribed path
+		}
 		if jXpaths.publishTsXpath != "" {
 			xpathVal[prefixPath+gXPathTokenPathSep+gGnmiJtimonExportTsName] = jXpaths.xPaths[jXpaths.publishTsXpath]
 		}
@@ -207,7 +214,9 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 			hdr.GetSubscribedPath() + gGnmiVerboseSensorDetailsDelim +
 			hdr.GetComponent()
 
-		mName = hdr.GetSubscribedPath()
+		if hdr.GetSubscribedPath() != "" {
+			mName = hdr.GetSubscribedPath()
+		}
 		xpathVal[prefixPath+gXPathTokenPathSep+gGnmiJtimonExportTsName] = hdr.GetExportTimestamp()
 
 		tsInMillisecs := (rsp.GetUpdate().GetTimestamp() / gGnmiFreqToMilli)
@@ -393,7 +402,11 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 			parseOutput.prefixPath, parseOutput.kvpairs, parseOutput.xpaths, jxpaths, jGnmiHdr, parseOutput.mName, rsp))
 	}
 
-	jLog(jctx, fmt.Sprintf("publishToInflux.. "))
+	internalJtimonEnabled := isInternalJtimonLogging(jctx)
+	if internalJtimonEnabled {
+		jLogInternalJtimonForGnmi(jctx, parseOutput)
+	}
+
 	err = publishToInflux(jctx, parseOutput.mName, parseOutput.prefixPath, parseOutput.kvpairs, parseOutput.xpaths)
 	if err != nil {
 		jLog(jctx, fmt.Sprintf("Publish to Influx fails: %v\n\n", parseOutput.mName))

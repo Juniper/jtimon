@@ -19,23 +19,24 @@ type ConfigFileList struct {
 
 // Config struct
 type Config struct {
-	Port              int           `json:"port"`
-	Host              string        `json:"host"`
-	User              string        `json:"user"`
-	Password          string        `json:"password"`
-	CID               string        `json:"cid"`
-	Meta              bool          `json:"meta"`
-	EOS               bool          `json:"eos"`
-	GRPC              GRPCConfig    `json:"grpc"`
-	TLS               TLSConfig     `json:"tls"`
-	Influx            InfluxConfig  `json:"influx"`
-	Kafka             *KafkaConfig  `json:"kafka"`
-	Paths             []PathsConfig `json:"paths"`
-	Log               LogConfig     `json:"log"`
-	Vendor            VendorConfig  `json:"vendor"`
-	Alias             string        `json:"alias"`
-	PasswordDecoder   string        `json:"password-decoder"`
-	EnableUintSupport bool          `json:"enable-uint"`
+	Port              int                  `json:"port"`
+	Host              string               `json:"host"`
+	User              string               `json:"user"`
+	Password          string               `json:"password"`
+	CID               string               `json:"cid"`
+	Meta              bool                 `json:"meta"`
+	EOS               bool                 `json:"eos"`
+	GRPC              GRPCConfig           `json:"grpc"`
+	TLS               TLSConfig            `json:"tls"`
+	Influx            InfluxConfig         `json:"influx"`
+	Kafka             *KafkaConfig         `json:"kafka"`
+	InternalJtimon    InternalJtimonConfig `json:"internal-jtimon"`
+	Paths             []PathsConfig        `json:"paths"`
+	Log               LogConfig            `json:"log"`
+	Vendor            VendorConfig         `json:"vendor"`
+	Alias             string               `json:"alias"`
+	PasswordDecoder   string               `json:"password-decoder"`
+	EnableUintSupport bool                 `json:"enable-uint"`
 }
 
 // GnmiConfig definition
@@ -270,6 +271,8 @@ func (jctx *JCtx) isConfigChanged(new Config) bool {
 		return true
 	case old.Log.File != new.Log.File:
 		return true
+	case old.InternalJtimon.DataLog != new.InternalJtimon.DataLog:
+		return true
 	case old.Log.Verbose != new.Log.Verbose:
 		return true
 	case old.Log.PeriodicStats != new.Log.PeriodicStats:
@@ -316,8 +319,10 @@ func HandleConfigChange(jctx *JCtx, config Config, restart *bool) error {
 		jLog(jctx, fmt.Sprintf("Config is changed for: %s, Running config of JTIMON: \n%s", jctx.file, string(b)))
 		config.Password = value // Revert back to decoded password
 		logStop(jctx)
+		internalJtimonLogStop(jctx)
 		jctx.config = config
 		logInit(jctx)
+		internalJtimonLogInit(jctx)
 		if restart != nil {
 			jLog(jctx, fmt.Sprintf("Restarting worker process to spawn new device connection for: %s", jctx.file))
 			*restart = true
@@ -342,6 +347,7 @@ func ConfigRead(jctx *JCtx, init bool, restart *bool) error {
 	if init {
 		jctx.config = config
 		logInit(jctx)
+		internalJtimonLogInit(jctx)
 		b, err := json.MarshalIndent(jctx.config, "", "    ")
 		if err != nil {
 			return fmt.Errorf("config parsing error (json marshal) for %s: %v", jctx.file, err)
