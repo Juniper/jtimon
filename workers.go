@@ -312,6 +312,7 @@ func NewJWorker(file string, wg *sync.WaitGroup, wsChan chan string) (*JWorker, 
 					// let the downstream subscribe go routines know we are done and no need to restart
 					jctx.control <- os.Interrupt
 					logStop(&jctx)
+					internalJtimonLogStop(&jctx)
 					return
 				case syscall.SIGHUP:
 					// handle SIGHUP if the streaming is happening.
@@ -359,6 +360,7 @@ func NewJWorker(file string, wg *sync.WaitGroup, wsChan chan string) (*JWorker, 
 				wsChan <- jctx.file
 				jctx.wg.Done()
 				logStop(&jctx)
+				internalJtimonLogStop(&jctx)
 				return
 			case rsp := <-dataCh:
 				err := gnmiHandleResponse(&jctx, rsp)
