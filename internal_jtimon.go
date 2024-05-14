@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strings"
 )
 
 // InternalJtimonConfig type
@@ -145,33 +146,34 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 		}
 	}
 
-	jctx.config.InternalJtimon.logger.Printf(s)
-
 	notif := rsp.GetUpdate()
 	if notif != nil {
-		s += fmt.Sprintf("Update {\n\ttimestamp: %d\n\tprefix: %v\n", notif.GetTimestamp(), notif.Prefix)
+		s += fmt.Sprintf(
+			"Update {\n\ttimestamp: %d\n\tprefix: %v\n", notif.GetTimestamp(), notif.Prefix)
 		for _, u := range notif.Update {
+			notifString := u.String()
 			s += fmt.Sprintf("Update {\n\tpath {\n")
-			s += fmt.Sprintf("%s\n", u.String())
 			re := regexp.MustCompile(`name:\"(.*?)\"`)
 			matches := re.FindAllStringSubmatch(u.String(), -1)
-			jctx.config.InternalJtimon.logger.Println(matches)
 			for _, match := range matches {
-				s += fmt.Sprintf("\t\telem {\n\t\t\tname: %s\n\t\t\t}", match[1])
+				s += fmt.Sprintf("\t\telem {\n\t\t\t")
+				s += fmt.Sprintf("name: %s\n\t\t}\n", match[1])
 			}
+
+			// Define regular expression pattern to match "key:val"
+			re = regexp.MustCompile(`val:\{(.*?)\}`)
+			result := re.FindStringSubmatch(notifString)
+			if len(result) > 1 {
+				keyVal := strings.Split(result[1], ":")
+				s += fmt.Sprintf("\t\tval {\n\t\t\t")
+				s += fmt.Sprintf("%s: %s\n\t\t}\n", keyVal[0], keyVal[1])
+			}
+
 			s += fmt.Sprintf("\t}\n")
-			//jctx.config.InternalJtimon.logger.Printf(fmt.Sprintf("%s\n", u.String()))
-			//jctx.config.InternalJtimon.logger.Printf(fmt.Sprintf("-----------------------"))
-			//jctx.config.InternalJtimon.logger.Printf(fmt.Sprintf("%v\n", u.GetPath()))
-			//jctx.config.InternalJtimon.logger.Printf(fmt.Sprintf("%v\n", u.GetVal()))
-			//jctx.config.InternalJtimon.logger.Printf(fmt.Sprintf("-----------------------"))
 		}
-		s += fmt.Sprintf("}")
-		jctx.config.InternalJtimon.logger.Printf(s)
-		//jctx.config.InternalJtimon.logger.Printf(fmt.Sprintf("-----------------------"))
-		//jctx.config.InternalJtimon.logger.Printf(fmt.Sprintf("%d\n", notif.Update))
-		//jctx.config.InternalJtimon.logger.Printf(fmt.Sprintf("%v\n", rsp.GetUpdate()))
+		s += fmt.Sprintf("}\n")
 	}
+	jctx.config.InternalJtimon.logger.Printf(s)
 }
 
 func jLogInternalJtimonForPreGnmi(jctx *JCtx, ocdata *na_pb.OpenConfigData, outString string) {
