@@ -62,6 +62,7 @@ func getGPRCDialOptions(jctx *JCtx, vendor *vendor) ([]grpc.DialOption, error) {
 
 	ws := jctx.config.GRPC.WS
 	opts = append(opts, grpc.WithInitialWindowSize(ws))
+	opts = append(opts, grpc.WithInitialConnWindowSize(ws))
 
 	if vendor.dialExt != nil {
 		opt := vendor.dialExt(jctx)

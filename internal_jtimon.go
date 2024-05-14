@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
-	na_pb "github.com/Juniper/jtimon/telemetry"
 	"log"
 	"os"
 	"regexp"
 	"strings"
+
+	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
+	na_pb "github.com/Juniper/jtimon/telemetry"
 )
 
 // InternalJtimonConfig type
@@ -148,8 +149,39 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 
 	notif := rsp.GetUpdate()
 	if notif != nil {
+		// Form an xpath for prefix here, as the internal jtimon tool does it this way.
+		prefixPath := ""
+		if !jctx.config.Vendor.RemoveNS {
+			prefixPath = notif.Prefix.GetOrigin()
+			if prefixPath != "" {
+				prefixPath += gGnmiVerboseSensorDetailsDelim
+			}
+		}
+
+		prefix := notif.GetPrefix()
+		if prefix != nil {
+			for _, pe := range prefix.GetElem() {
+				peName := pe.GetName()
+				prefixPath += gXPathTokenPathSep + peName
+				is_key := false
+				for k, v := range pe.GetKey() {
+					if is_key {
+						prefixPath += " and " + k + "='" + v + "'"
+					} else {
+						prefixPath += "[" + k + "='" + v + "'"
+						is_key = true
+					}
+				}
+				if is_key {
+					prefixPath += "]"
+				}
+			}
+		}
+
 		s += fmt.Sprintf(
-			"Update {\n\ttimestamp: %d\n\tprefix: %v\n", notif.GetTimestamp(), notif.Prefix)
+			"Update {\n\ttimestamp: %d\n\tprefix: %v\n", notif.GetTimestamp(), prefixPath)
+
+		// Parse all the updates here
 		for _, u := range notif.Update {
 			notifString := u.String()
 			s += fmt.Sprintf("Update {\n\tpath {\n")
