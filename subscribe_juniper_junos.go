@@ -34,7 +34,7 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 
 	s := ""
 
-	if *print || (IsVerboseLogging(jctx) && !*print) {
+	if *print || (IsVerboseLogging(jctx) && !*print) || (isInternalJtimonLogging(jctx)) {
 		s += fmt.Sprintf("system_id: %s\n", ocData.SystemId)
 		s += fmt.Sprintf("component_id: %d\n", ocData.ComponentId)
 		s += fmt.Sprintf("sub_component_id: %d\n", ocData.SubComponentId)
@@ -56,7 +56,7 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 	for _, kv := range ocData.Kv {
 		updateStatsKV(jctx, true, 1)
 
-		if *print || (IsVerboseLogging(jctx) && !*print) {
+		if *print || (IsVerboseLogging(jctx) && !*print) || (isInternalJtimonLogging(jctx)) {
 			s += fmt.Sprintf("  key: %s\n", kv.Key)
 			switch value := kv.Value.(type) {
 			case *na_pb.KeyValue_DoubleValue:
@@ -99,7 +99,11 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 			}
 		}
 	}
-	if s != "" {
+
+	if s != "" && isInternalJtimonLogging(jctx) {
+		jLogInternalJtimonForPreGnmi(jctx, nil, s)
+	}
+	if s != "" && (*print || (IsVerboseLogging(jctx) && !*print)) {
 		jLog(jctx, s)
 	}
 }
@@ -171,11 +175,7 @@ func subSendAndReceive(conn *grpc.ClientConn, jctx *JCtx,
 				}
 			}
 
-			if *print || *stateHandler || IsVerboseLogging(jctx) {
-				handleOnePacket(ocData, jctx)
-			}
-
-			if isInternalJtimonLogging(jctx) {
+			if *print || *stateHandler || IsVerboseLogging(jctx) || isInternalJtimonLogging(jctx) {
 				handleOnePacket(ocData, jctx)
 			}
 

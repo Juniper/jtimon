@@ -404,7 +404,7 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 
 	internalJtimonEnabled := isInternalJtimonLogging(jctx)
 	if internalJtimonEnabled {
-		jLogInternalJtimonForGnmi(jctx, parseOutput)
+		jLogInternalJtimonForGnmi(jctx, parseOutput, rsp)
 	}
 
 	err = publishToInflux(jctx, parseOutput.mName, parseOutput.prefixPath, parseOutput.kvpairs, parseOutput.xpaths)
