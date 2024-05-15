@@ -57,9 +57,10 @@ func TestValidateConfig(t *testing.T) {
 		name  string
 		error bool
 	}{
-		{"tests/data/noerror.json", false}, // no error
-		{"tests/data/error.jso", true},     // file does not exists
-		{"tests/data/error.json", true},    // syntax error in JSON file
+		{"tests/data/noerror.json", false},                 // no error
+		{"tests/data/noerror_internal_jtimon.json", false}, // no error
+		{"tests/data/error.jso", true},                     // file does not exists
+		{"tests/data/error.json", true},                    // syntax error in JSON file
 	}
 
 	for _, test := range tests {
