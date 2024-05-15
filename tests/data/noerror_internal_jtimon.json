@@ -1,0 +1,23 @@
+{
+    "host": "127.0.0.1",
+    "port": 50051,
+    "cid": "my-client-id",
+    "influx" : {
+        "server" : "127.0.0.1",
+        "port" : 8086,
+        "dbname" : "db",
+        "measurement" : "m",
+        "user" : "influx",
+        "password" : "influxdb"
+    },
+    "log" : {
+        "file" : "/tmp/jtisim.log"
+    },
+    "internal-jtimon": {
+        "data-log-file": "tmp/only_packet_dumps"
+    },
+    "paths": [{
+        "path": "/interfaces",
+        "freq": 2000
+    }]
+}
