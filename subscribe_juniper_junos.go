@@ -233,7 +233,7 @@ func subscribeJunos(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []Paths
 	for i := range paths {
 		var pathM na_pb.Path
 		pathM.Path = paths[i].Path
-		pathM.SampleFrequency = uint32(cfg.Paths[i].Freq)
+		pathM.SampleFrequency = uint32(paths[i].Freq)
 		subReqM.PathList = append(subReqM.PathList, &pathM)
 	}
 	additionalConfigM.NeedEos = jctx.config.EOS
