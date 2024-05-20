@@ -34,7 +34,9 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 
 	s := ""
 
-	if *print || (IsVerboseLogging(jctx) && !*print) || (isInternalJtimonLogging(jctx)) {
+	if *csvStats {
+		s += fmt.Sprintf("%s", ocData.Path)
+	} else if *print || (IsVerboseLogging(jctx) && !*print) || (isInternalJtimonLogging(jctx)) {
 		s += fmt.Sprintf("system_id: %s\n", ocData.SystemId)
 		s += fmt.Sprintf("component_id: %d\n", ocData.ComponentId)
 		s += fmt.Sprintf("sub_component_id: %d\n", ocData.SubComponentId)
@@ -56,7 +58,38 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 	for _, kv := range ocData.Kv {
 		updateStatsKV(jctx, true, 1)
 
-		if *print || (IsVerboseLogging(jctx) && !*print) || (isInternalJtimonLogging(jctx)) {
+		if *csvStats {
+			switch value := kv.Value.(type) {
+			case *na_pb.KeyValue_DoubleValue:
+				s += fmt.Sprintf(",%v", value.DoubleValue)
+			case *na_pb.KeyValue_IntValue:
+				s += fmt.Sprintf(",%d", value.IntValue)
+			case *na_pb.KeyValue_UintValue:
+				s += fmt.Sprintf(",%d", value.UintValue)
+			case *na_pb.KeyValue_SintValue:
+				s += fmt.Sprintf(",%d", value.SintValue)
+			case *na_pb.KeyValue_BoolValue:
+				s += fmt.Sprintf(",%v", value.BoolValue)
+			case *na_pb.KeyValue_StrValue:
+				s += fmt.Sprintf(",%s", value.StrValue)
+			case *na_pb.KeyValue_BytesValue:
+				s += fmt.Sprintf(",%s", value.BytesValue)
+			case *na_pb.KeyValue_LeaflistValue:
+				s += fmt.Sprintf(",%s", value.LeaflistValue)
+				e := kv.GetLeaflistValue().Element
+				for _, elem := range e {
+					switch elem.Value.(type) {
+					case *na_pb.TypedValue_LeaflistStrValue:
+						llStrValue := elem.GetLeaflistStrValue()
+						s += fmt.Sprintf(",leaf_list_value(element): %s\n", llStrValue)
+					}
+				}
+
+			default:
+				s += fmt.Sprintf(",default: %v\n", value)
+			}
+
+		} else if *print || (IsVerboseLogging(jctx) && !*print) || (isInternalJtimonLogging(jctx)) {
 			s += fmt.Sprintf("  key: %s\n", kv.Key)
 			switch value := kv.Value.(type) {
 			case *na_pb.KeyValue_DoubleValue:
@@ -105,6 +138,10 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 	}
 	if s != "" && (*print || (IsVerboseLogging(jctx) && !*print)) {
 		jLog(jctx, s)
+	}
+	// Add a new line when csv stats is enabled
+	if *csvStats {
+		s += "\n"
 	}
 }
 
