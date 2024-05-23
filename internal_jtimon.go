@@ -96,6 +96,27 @@ func isInternalJtimonLogging(jctx *JCtx) bool {
 	return jctx.config.InternalJtimon.logger != nil
 }
 
+func getPath(prefixPath string, pathElements []*gnmi.PathElem) string {
+	for _, pe := range pathElements {
+		peName := pe.GetName()
+		prefixPath += gXPathTokenPathSep + peName
+		is_key := false
+		for k, v := range pe.GetKey() {
+			if is_key {
+				prefixPath += " and " + k + "='" + v + "'"
+			} else {
+				prefixPath += "[" + k + "='" + v + "'"
+				is_key = true
+			}
+		}
+		if is_key {
+			prefixPath += "]"
+		}
+	}
+
+	return prefixPath
+}
+
 func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *gnmi.SubscribeResponse) {
 	if jctx.config.InternalJtimon.logger == nil {
 		return
@@ -160,26 +181,17 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 
 		prefix := notif.GetPrefix()
 		if prefix != nil {
-			for _, pe := range prefix.GetElem() {
-				peName := pe.GetName()
-				prefixPath += gXPathTokenPathSep + peName
-				is_key := false
-				for k, v := range pe.GetKey() {
-					if is_key {
-						prefixPath += " and " + k + "='" + v + "'"
-					} else {
-						prefixPath += "[" + k + "='" + v + "'"
-						is_key = true
-					}
-				}
-				if is_key {
-					prefixPath += "]"
-				}
-			}
+			prefixPath = getPath(prefixPath, prefix.GetElem())
 		}
 
 		s += fmt.Sprintf(
 			"Update {\n\ttimestamp: %d\n\tprefix: %v\n", notif.GetTimestamp(), prefixPath)
+
+		// Parse all the deletes here
+		for _, d := range notif.Delete {
+			delPath := getPath(prefixPath, d.GetElem())
+			s += fmt.Sprintf("del_path: %s", delPath)
+		}
 
 		// Parse all the updates here
 		for _, u := range notif.Update {
