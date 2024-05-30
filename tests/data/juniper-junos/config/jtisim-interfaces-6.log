@@ -45,6 +45,12 @@ Running config of JTIMON:
         "write-per-measurement": false
     },
     "kafka": null,
+    "internal-jtimon": {
+        "data-log-file": ""
+    },
+    "csv-stats-log": {
+        "csv-log-file": ""
+    },
     "paths": [
         {
             "path": "/interfaces",
@@ -72,22 +78,23 @@ Running config of JTIMON:
 }
 invoking getInfluxClient for init
 invoking getInfluxClient
+127.0.0.1, jctx.config.Kafka.producer: <nil>
 New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
-  content-type: [application/grpc]
   jtisim: [yes]
+  content-type: [application/grpc]
 Receiving telemetry data from 127.0.0.1:50051
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Wed Feb 14 14:18:39 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed May 29 18:49:39 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 3.992420416s)
+Collector Stats for 127.0.0.1:50051 (Run time : 3.995759208s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)

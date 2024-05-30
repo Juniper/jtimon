@@ -31,6 +31,7 @@ type Config struct {
 	Influx            InfluxConfig         `json:"influx"`
 	Kafka             *KafkaConfig         `json:"kafka"`
 	InternalJtimon    InternalJtimonConfig `json:"internal-jtimon"`
+	CsvStatsJtimon    CsvStatsLogging      `json:"csv-stats-log"`
 	Paths             []PathsConfig        `json:"paths"`
 	Log               LogConfig            `json:"log"`
 	Vendor            VendorConfig         `json:"vendor"`
@@ -320,9 +321,11 @@ func HandleConfigChange(jctx *JCtx, config Config, restart *bool) error {
 		config.Password = value // Revert back to decoded password
 		logStop(jctx)
 		internalJtimonLogStop(jctx)
+		csvStatsLogStop(jctx)
 		jctx.config = config
 		logInit(jctx)
 		internalJtimonLogInit(jctx)
+		csvStatsLogInit(jctx)
 		if restart != nil {
 			jLog(jctx, fmt.Sprintf("Restarting worker process to spawn new device connection for: %s", jctx.file))
 			*restart = true
@@ -348,6 +351,7 @@ func ConfigRead(jctx *JCtx, init bool, restart *bool) error {
 		jctx.config = config
 		logInit(jctx)
 		internalJtimonLogInit(jctx)
+		csvStatsLogInit(jctx)
 		b, err := json.MarshalIndent(jctx.config, "", "    ")
 		if err != nil {
 			return fmt.Errorf("config parsing error (json marshal) for %s: %v", jctx.file, err)

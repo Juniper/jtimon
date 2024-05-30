@@ -3,13 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
+	na_pb "github.com/Juniper/jtimon/telemetry"
 	"log"
 	"os"
 	"regexp"
 	"strings"
-
-	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
-	na_pb "github.com/Juniper/jtimon/telemetry"
 )
 
 // InternalJtimonConfig type
@@ -19,23 +18,6 @@ type InternalJtimonConfig struct {
 	preGnmiOut    *os.File
 	logger        *log.Logger
 	preGnmiLogger *log.Logger
-}
-
-type InternalJtimonPathElem struct {
-	Name string `json:"name"`
-}
-
-type InternalJtimonPath struct {
-	Elems []InternalJtimonPathElem `json:"elem"`
-}
-
-type InternalJtimonVal struct {
-	StringVal string `json:"string_val"`
-}
-
-type InternalJtimonUpdate struct {
-	Path InternalJtimonPath `json:"path"`
-	Val  InternalJtimonVal  `json:"val"`
 }
 
 func internalJtimonLogInit(jctx *JCtx) {
@@ -215,8 +197,4 @@ func jLogInternalJtimonForPreGnmi(jctx *JCtx, ocdata *na_pb.OpenConfigData, outS
 
 	// Log here in the format of internal jtimon
 	jctx.config.InternalJtimon.preGnmiLogger.Printf("%s", outString)
-}
-
-func jLogUpdateOnChange(jctx *JCtx, kv map[string]string) {
-	return
 }

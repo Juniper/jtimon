@@ -530,8 +530,12 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 
 			if err != nil {
 				jLog(jctx, fmt.Sprintf("gNMI host: %v, receive response failed: %v", hostname, err))
-				sc, _ := status.FromError(err)
-
+				sc, sErr := status.FromError(err)
+				if !sErr {
+					jLog(jctx, fmt.Sprintf("Failed to retrieve status from error: %v", sErr))
+					datach <- SubRcConnRetry
+					return
+				}
 				/*
 				 * Unavailable is just a cover-up for JUNOS, ideally the device is expected to return:
 				 *   1. Unimplemented if RPC is not available yet

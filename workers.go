@@ -272,7 +272,7 @@ func NewJWorker(file string, wg *sync.WaitGroup, wsChan chan string) (*JWorker, 
 		log.Println(err)
 		return w, err
 	}
-	log.Printf("%v, jctx.config.Kafka.producer: %v", jctx.config.Host, jctx.config.Kafka)
+	jLog(&jctx, fmt.Sprintf("%v, jctx.config.Kafka.producer: %v\n", jctx.config.Host, jctx.config.Kafka))
 	if alias, err := NewAlias(jctx.config.Alias); err == nil {
 		jctx.alias = alias
 	} else {
@@ -313,6 +313,7 @@ func NewJWorker(file string, wg *sync.WaitGroup, wsChan chan string) (*JWorker, 
 					jctx.control <- os.Interrupt
 					logStop(&jctx)
 					internalJtimonLogStop(&jctx)
+					csvStatsLogStop(&jctx)
 					return
 				case syscall.SIGHUP:
 					// handle SIGHUP if the streaming is happening.
@@ -361,6 +362,7 @@ func NewJWorker(file string, wg *sync.WaitGroup, wsChan chan string) (*JWorker, 
 				jctx.wg.Done()
 				logStop(&jctx)
 				internalJtimonLogStop(&jctx)
+				csvStatsLogStop(&jctx)
 				return
 			case rsp := <-dataCh:
 				err := gnmiHandleResponse(&jctx, rsp)
@@ -598,10 +600,10 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 		if vendor.subscribe == nil {
 			panic(fmt.Sprintf("could not found subscribe implementation for vendor %s", vendor.name))
 		}
-		fmt.Println("Calling subscribe() :::", jctx.file)
+		jLog(jctx, fmt.Sprintf("Calling subscribe() ::: %s\n", jctx.file))
 		subscribeConfig := jctx.config
 		code := vendor.subscribe(conn, jctx, subscribeConfig, subscribeConfig.Paths)
-		fmt.Println("Returns subscribe() :::", jctx.file, "CODE ::: ", code)
+		jLog(jctx, fmt.Sprintf("Returns subscribe() ::: %s CODE ::: %d\n", jctx.file, code))
 
 		// close the current connection and retry
 		conn.Close()

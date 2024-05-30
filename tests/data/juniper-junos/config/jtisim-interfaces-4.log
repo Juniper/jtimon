@@ -45,6 +45,12 @@ Running config of JTIMON:
         "write-per-measurement": false
     },
     "kafka": null,
+    "internal-jtimon": {
+        "data-log-file": ""
+    },
+    "csv-stats-log": {
+        "csv-log-file": ""
+    },
     "paths": [
         {
             "path": "/interfaces",
@@ -72,13 +78,16 @@ Running config of JTIMON:
 }
 invoking getInfluxClient for init
 invoking getInfluxClient
+127.0.0.1, jctx.config.Kafka.producer: <nil>
 New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:90052
 subscribe returns, reconnecting after 10s for worker tests/data/juniper-junos/config/jtisim-interfaces-4.json
+compression = none
+Reconnecting to 127.0.0.1:90052
 
 
-Collector Stats for 127.0.0.1:90052 (Run time : 10.004682917s)
+Collector Stats for 127.0.0.1:90052 (Run time : 10.003588208s)
 0            : in-packets
 0            : data points (KV pairs)
 0            : in-header wirelength (bytes)
@@ -88,5 +97,6 @@ Collector Stats for 127.0.0.1:90052 (Run time : 10.004682917s)
 
 
 Streaming for host 127.0.0.1 will be stopped (SIGINT)
+subscribe returns, reconnecting after 10s for worker tests/data/juniper-junos/config/jtisim-interfaces-4.json
 compression = none
 Connection for 127.0.0.1:90052 has been interrupted
