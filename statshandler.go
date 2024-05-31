@@ -256,7 +256,10 @@ func printSummary(jctx *JCtx) {
 }
 
 func isCsvStatsEnabled(jctx *JCtx) bool {
-	return jctx.config.InternalJtimon.CsvStats
+	if *stateHandler && jctx.config.InternalJtimon.CsvStats {
+		return true
+	}
+	return false
 }
 
 func csvStatsLogInit(jctx *JCtx) {

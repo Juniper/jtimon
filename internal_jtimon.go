@@ -64,7 +64,7 @@ func internalJtimonLogInit(jctx *JCtx) {
 			jctx.config.InternalJtimon.DataLog, jctx.config.Host, jctx.config.Port)
 	}
 
-	if jctx.config.InternalJtimon.CsvStats {
+	if *stateHandler && jctx.config.InternalJtimon.CsvStats {
 		csvStatsLogInit(jctx)
 	}
 }
@@ -80,7 +80,7 @@ func internalJtimonLogStop(jctx *JCtx) {
 		jctx.config.InternalJtimon.preGnmiOut = nil
 		jctx.config.InternalJtimon.preGnmiLogger = nil
 	}
-	if jctx.config.InternalJtimon.CsvStats {
+	if *stateHandler && jctx.config.InternalJtimon.CsvStats {
 		csvStatsLogStop(jctx)
 	}
 }
