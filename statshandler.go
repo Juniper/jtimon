@@ -169,7 +169,7 @@ func (h *statshandler) getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiS
 			break
 		}
 		if !jHdrPresent {
-			h.jctx.config.InternalJtimon.csvLogger.Printf(fmt.Sprintf(
+			jLog(h.jctx, fmt.Sprintf(
 				"Juniper header extension not present, available extensions: %v", extIds))
 		}
 	}
