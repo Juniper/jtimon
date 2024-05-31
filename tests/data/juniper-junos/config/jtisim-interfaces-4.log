@@ -86,7 +86,7 @@ compression = none
 Reconnecting to 127.0.0.1:90052
 
 
-Collector Stats for 127.0.0.1:90052 (Run time : 10.002802084s)
+Collector Stats for 127.0.0.1:90052 (Run time : 10.004200459s)
 0            : in-packets
 0            : data points (KV pairs)
 0            : in-header wirelength (bytes)
@@ -98,3 +98,4 @@ Collector Stats for 127.0.0.1:90052 (Run time : 10.002802084s)
 Streaming for host 127.0.0.1 will be stopped (SIGINT)
 subscribe returns, reconnecting after 10s for worker tests/data/juniper-junos/config/jtisim-interfaces-4.json
 compression = none
+Connection for 127.0.0.1:90052 has been interrupted

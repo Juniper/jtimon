@@ -85,57 +85,57 @@ New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
-  jtisim: [yes]
   content-type: [application/grpc]
+  jtisim: [yes]
 Receiving telemetry data from 127.0.0.1:50051
-Batch processing: #packets:40 #points:40
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Fri May 31 01:54:13 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:22:23 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
+Batch processing: #packets:40 #points:40
 Batch write successful! Post batch write available points:  0
 
-| Fri May 31 01:54:15 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:22:25 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 01:54:17 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:22:27 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 01:54:19 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:22:29 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 01:54:21 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:22:31 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 
-| Fri May 31 01:54:23 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:22:33 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 Batch write successful! Post batch write available points:  0
 
-| Fri May 31 01:54:25 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:22:35 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 01:54:27 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:22:37 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 01:54:29 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:22:39 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 01:54:31 PDT 2024 |               4693 |                 95 |             207114 |             207589 |
+| Fri May 31 02:22:41 PDT 2024 |               5367 |                109 |             236698 |             237243 |
 
 Batch processing: #packets:40 #points:40
 
-| Fri May 31 01:54:33 PDT 2024 |               5940 |                120 |             262258 |             262858 |
+| Fri May 31 02:22:43 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 Batch write successful! Post batch write available points:  0
 
-| Fri May 31 01:54:35 PDT 2024 |               5940 |                120 |             262258 |             262858 |
+| Fri May 31 02:22:45 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 25.002129875s)
+Collector Stats for 127.0.0.1:50051 (Run time : 25.004155208s)
 120          : in-packets
 5940         : data points (KV pairs)
 25           : in-header wirelength (bytes)
