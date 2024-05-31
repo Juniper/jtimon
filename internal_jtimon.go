@@ -15,7 +15,6 @@ import (
 type InternalJtimonConfig struct {
 	DataLog       string `json:"data-log-file"`
 	CsvLog        string `json:"csv-log-file"`
-	CsvStats      bool   `json:"csv-stats"`
 	out           *os.File
 	preGnmiOut    *os.File
 	csvOut        *os.File
@@ -64,7 +63,7 @@ func internalJtimonLogInit(jctx *JCtx) {
 			jctx.config.InternalJtimon.DataLog, jctx.config.Host, jctx.config.Port)
 	}
 
-	if *stateHandler && jctx.config.InternalJtimon.CsvStats {
+	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
 		csvStatsLogInit(jctx)
 	}
 }
@@ -80,7 +79,7 @@ func internalJtimonLogStop(jctx *JCtx) {
 		jctx.config.InternalJtimon.preGnmiOut = nil
 		jctx.config.InternalJtimon.preGnmiLogger = nil
 	}
-	if *stateHandler && jctx.config.InternalJtimon.CsvStats {
+	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
 		csvStatsLogStop(jctx)
 	}
 }

@@ -461,7 +461,6 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 		sub  = gnmi.SubscribeRequest_Subscribe{Subscribe: &subs}
 		req  = gnmi.SubscribeRequest{Request: &sub}
 		err  error
-		err1 error
 
 		hostname = jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
 		ctx      context.Context
@@ -516,7 +515,8 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 	// 3. Receive rsp
 	go func() {
 		var (
-			rsp *gnmi.SubscribeResponse
+			rsp  *gnmi.SubscribeResponse
+			err1 error
 		)
 
 		jLog(jctx, fmt.Sprintf("gNMI host: %v, receiving data..", hostname))

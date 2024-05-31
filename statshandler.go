@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	gnmi_ext1 "github.com/Juniper/jtimon/gnmi/gnmi_ext"
 	gnmi_juniper_header_ext "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header_ext"
 	"log"
 	"os"
@@ -71,7 +72,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	case *stats.InPayload:
 		h.jctx.stats.totalInPayloadLength += uint64(s.(*stats.InPayload).Length)
 		h.jctx.stats.totalInPayloadWireLength += uint64(s.(*stats.InPayload).WireLength)
-		if *stateHandler && h.jctx.config.InternalJtimon.CsvStats {
+		if *stateHandler && h.jctx.config.InternalJtimon.CsvLog != "" {
 			switch v := (s.(*stats.InPayload).Payload).(type) {
 			case *na_pb.OpenConfigData:
 				updateStats(h.jctx, v, false)
@@ -101,7 +102,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					}
 				}
 			case *gnmi_pb.SubscribeResponse:
-				stat := getKPIStats(v)
+				stat := h.getKPIStats(v)
 				if stat != nil && stat.Timestamp != 0 {
 					path := stat.SensorName + ":" + stat.Streamed_path + ":" + stat.Path + ":" + stat.Component
 					h.jctx.config.InternalJtimon.csvLogger.Printf(
@@ -121,8 +122,8 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	}
 }
 
-func getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiStats {
-
+func (h *statshandler) getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiStats {
+	var jHdrPresent bool
 	stats := new(kpiStats)
 	notfn := subResponse.GetUpdate()
 	if notfn == nil {
@@ -132,12 +133,17 @@ func getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiStats {
 	extns := subResponse.GetExtension()
 
 	if extns != nil {
-		extn := extns[0]
-		if extn != nil {
-			var hdr gnmi_juniper_header_ext.GnmiJuniperTelemetryHeaderExtension
+		var extIds []gnmi_ext1.ExtensionID
+		for _, ext := range extns {
+			regExtn := ext.GetRegisteredExt()
+			if (regExtn.GetId()) != gnmi_ext1.ExtensionID_EID_JUNIPER_TELEMETRY_HEADER {
+				extIds = append(extIds, regExtn.GetId())
+				continue
+			}
 
-			reg_extn := extn.GetRegisteredExt()
-			msg := reg_extn.GetMsg()
+			jHdrPresent = true
+			var hdr gnmi_juniper_header_ext.GnmiJuniperTelemetryHeaderExtension
+			msg := regExtn.GetMsg()
 			err := proto.Unmarshal(msg, &hdr)
 			if err != nil {
 				log.Fatal("unmarshaling error: ", err)
@@ -160,6 +166,11 @@ func getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiStats {
 			if hdr.StreamCreationTimestamp > 0 {
 				stats.re_stream_creation_timestamp = uint64(hdr.StreamCreationTimestamp)
 			}
+			break
+		}
+		if !jHdrPresent {
+			h.jctx.config.InternalJtimon.csvLogger.Printf(fmt.Sprintf(
+				"Juniper header extension not present, available extensions: %v", extIds))
 		}
 	}
 	return stats
@@ -256,14 +267,14 @@ func printSummary(jctx *JCtx) {
 }
 
 func isCsvStatsEnabled(jctx *JCtx) bool {
-	if *stateHandler && jctx.config.InternalJtimon.CsvStats {
+	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
 		return true
 	}
 	return false
 }
 
 func csvStatsLogInit(jctx *JCtx) {
-	if !*stateHandler && !jctx.config.InternalJtimon.CsvStats {
+	if !*stateHandler && jctx.config.InternalJtimon.CsvLog == "" {
 		return
 	}
 	var out *os.File
