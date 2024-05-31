@@ -278,7 +278,7 @@ func csvStatsLogInit(jctx *JCtx) {
 		jctx.config.CsvStatsJtimon.CsvLog = csvStatsFile
 	}
 
-	out, err = os.OpenFile(csvStatsFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	out, err = os.OpenFile(jctx.config.CsvStatsJtimon.CsvLog, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Printf("Could not create csv stats file(%s): %v\n", csvStatsFile, err)
 	}
