@@ -71,7 +71,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	case *stats.InPayload:
 		h.jctx.stats.totalInPayloadLength += uint64(s.(*stats.InPayload).Length)
 		h.jctx.stats.totalInPayloadWireLength += uint64(s.(*stats.InPayload).WireLength)
-		if !*stateHandler && !h.jctx.config.InternalJtimon.CsvStats {
+		if *stateHandler && h.jctx.config.InternalJtimon.CsvStats {
 			switch v := (s.(*stats.InPayload).Payload).(type) {
 			case *na_pb.OpenConfigData:
 				updateStats(h.jctx, v, false)
