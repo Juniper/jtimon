@@ -46,10 +46,9 @@ Running config of JTIMON:
     },
     "kafka": null,
     "internal-jtimon": {
-        "data-log-file": ""
-    },
-    "csv-stats-log": {
-        "csv-log-file": ""
+        "data-log-file": "",
+        "csv-log-file": "",
+        "csv-stats": false
     },
     "paths": [
         {
@@ -87,7 +86,7 @@ compression = none
 Reconnecting to 127.0.0.1:90052
 
 
-Collector Stats for 127.0.0.1:90052 (Run time : 10.003588208s)
+Collector Stats for 127.0.0.1:90052 (Run time : 10.002802084s)
 0            : in-packets
 0            : data points (KV pairs)
 0            : in-header wirelength (bytes)
@@ -99,4 +98,3 @@ Collector Stats for 127.0.0.1:90052 (Run time : 10.003588208s)
 Streaming for host 127.0.0.1 will be stopped (SIGINT)
 subscribe returns, reconnecting after 10s for worker tests/data/juniper-junos/config/jtisim-interfaces-4.json
 compression = none
-Connection for 127.0.0.1:90052 has been interrupted

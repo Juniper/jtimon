@@ -46,10 +46,9 @@ Running config of JTIMON:
     },
     "kafka": null,
     "internal-jtimon": {
-        "data-log-file": ""
-    },
-    "csv-stats-log": {
-        "csv-log-file": ""
+        "data-log-file": "",
+        "csv-log-file": "",
+        "csv-stats": false
     },
     "paths": [
         {

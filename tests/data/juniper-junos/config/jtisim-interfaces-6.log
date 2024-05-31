@@ -46,10 +46,9 @@ Running config of JTIMON:
     },
     "kafka": null,
     "internal-jtimon": {
-        "data-log-file": ""
-    },
-    "csv-stats-log": {
-        "csv-log-file": ""
+        "data-log-file": "",
+        "csv-log-file": "",
+        "csv-stats": false
     },
     "paths": [
         {
@@ -90,11 +89,11 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Wed May 29 18:49:39 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 01:53:23 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 3.995759208s)
+Collector Stats for 127.0.0.1:50051 (Run time : 3.98695525s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)
