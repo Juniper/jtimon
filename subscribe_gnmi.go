@@ -515,23 +515,28 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 	// 3. Receive rsp
 	go func() {
 		var (
-			rsp *gnmi.SubscribeResponse
+			rsp  *gnmi.SubscribeResponse
+			err1 error
 		)
 
 		jLog(jctx, fmt.Sprintf("gNMI host: %v, receiving data..", hostname))
 		for {
-			rsp, err = gNMISubHandle.Recv()
-			if err == io.EOF {
+			rsp, err1 = gNMISubHandle.Recv()
+			if err1 == io.EOF {
 				printSummary(jctx)
 				jLog(jctx, fmt.Sprintf("gNMI host: %v, received eof", hostname))
 				datach <- SubRcConnRetry
 				return
 			}
 
-			if err != nil {
-				jLog(jctx, fmt.Sprintf("gNMI host: %v, receive response failed: %v", hostname, err))
-				sc, _ := status.FromError(err)
-
+			if err1 != nil {
+				jLog(jctx, fmt.Sprintf("gNMI host: %v, receive response failed: %v", hostname, err1))
+				sc, sErr := status.FromError(err)
+				if !sErr {
+					jLog(jctx, fmt.Sprintf("Failed to retrieve status from error: %v", sErr))
+					datach <- SubRcConnRetry
+					return
+				}
 				/*
 				 * Unavailable is just a cover-up for JUNOS, ideally the device is expected to return:
 				 *   1. Unimplemented if RPC is not available yet
@@ -547,16 +552,16 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 			}
 
 			if *noppgoroutines {
-				err = gnmiHandleResponse(jctx, rsp)
-				if err != nil && strings.Contains(err.Error(), gGnmiJtimonIgnoreErrorSubstr) {
-					jLog(jctx, fmt.Sprintf("gNMI host: %v, parsing response failed: %v", hostname, err))
+				gnmiErr := gnmiHandleResponse(jctx, rsp)
+				if gnmiErr != nil && strings.Contains(gnmiErr.Error(), gGnmiJtimonIgnoreErrorSubstr) {
+					jLog(jctx, fmt.Sprintf("gNMI host: %v, parsing response failed: %v", hostname, gnmiErr))
 					continue
 				}
 			} else {
 				go func() {
-					err = gnmiHandleResponse(jctx, rsp)
-					if err != nil && strings.Contains(err.Error(), gGnmiJtimonIgnoreErrorSubstr) {
-						jLog(jctx, fmt.Sprintf("gNMI host: %v, parsing response failed: %v", hostname, err))
+					gnmiErr1 := gnmiHandleResponse(jctx, rsp)
+					if gnmiErr1 != nil && strings.Contains(gnmiErr1.Error(), gGnmiJtimonIgnoreErrorSubstr) {
+						jLog(jctx, fmt.Sprintf("gNMI host: %v, parsing response failed: %v", hostname, gnmiErr1))
 					}
 				}()
 			}

@@ -3,39 +3,24 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
+	na_pb "github.com/Juniper/jtimon/telemetry"
 	"log"
 	"os"
 	"regexp"
 	"strings"
-
-	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
-	na_pb "github.com/Juniper/jtimon/telemetry"
 )
 
 // InternalJtimonConfig type
 type InternalJtimonConfig struct {
 	DataLog       string `json:"data-log-file"`
+	CsvLog        string `json:"csv-log-file"`
 	out           *os.File
 	preGnmiOut    *os.File
+	csvOut        *os.File
 	logger        *log.Logger
 	preGnmiLogger *log.Logger
-}
-
-type InternalJtimonPathElem struct {
-	Name string `json:"name"`
-}
-
-type InternalJtimonPath struct {
-	Elems []InternalJtimonPathElem `json:"elem"`
-}
-
-type InternalJtimonVal struct {
-	StringVal string `json:"string_val"`
-}
-
-type InternalJtimonUpdate struct {
-	Path InternalJtimonPath `json:"path"`
-	Val  InternalJtimonVal  `json:"val"`
+	csvLogger     *log.Logger
 }
 
 func internalJtimonLogInit(jctx *JCtx) {
@@ -77,6 +62,10 @@ func internalJtimonLogInit(jctx *JCtx) {
 		log.Printf("logging in %s_pre-gnmi for %s:%d [in the format of internal jtimon tool]\n",
 			jctx.config.InternalJtimon.DataLog, jctx.config.Host, jctx.config.Port)
 	}
+
+	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
+		csvStatsLogInit(jctx)
+	}
 }
 
 func internalJtimonLogStop(jctx *JCtx) {
@@ -89,6 +78,9 @@ func internalJtimonLogStop(jctx *JCtx) {
 		jctx.config.InternalJtimon.preGnmiOut.Close()
 		jctx.config.InternalJtimon.preGnmiOut = nil
 		jctx.config.InternalJtimon.preGnmiLogger = nil
+	}
+	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
+		csvStatsLogStop(jctx)
 	}
 }
 
@@ -227,8 +219,4 @@ func jLogInternalJtimonForPreGnmi(jctx *JCtx, ocdata *na_pb.OpenConfigData, outS
 
 	// Log here in the format of internal jtimon
 	jctx.config.InternalJtimon.preGnmiLogger.Printf("%s", outString)
-}
-
-func jLogUpdateOnChange(jctx *JCtx, kv map[string]string) {
-	return
 }

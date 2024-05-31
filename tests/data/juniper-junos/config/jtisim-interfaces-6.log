@@ -45,6 +45,11 @@ Running config of JTIMON:
         "write-per-measurement": false
     },
     "kafka": null,
+    "internal-jtimon": {
+        "data-log-file": "",
+        "csv-log-file": "",
+        "csv-stats": false
+    },
     "paths": [
         {
             "path": "/interfaces",
@@ -72,6 +77,7 @@ Running config of JTIMON:
 }
 invoking getInfluxClient for init
 invoking getInfluxClient
+127.0.0.1, jctx.config.Kafka.producer: <nil>
 New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
@@ -83,11 +89,11 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Wed Feb 14 14:18:39 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:21:33 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 3.992420416s)
+Collector Stats for 127.0.0.1:50051 (Run time : 3.99416075s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)

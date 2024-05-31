@@ -2,10 +2,16 @@ package main
 
 import (
 	"fmt"
+	gnmi_ext1 "github.com/Juniper/jtimon/gnmi/gnmi_ext"
+	gnmi_juniper_header_ext "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header_ext"
+	"log"
+	"os"
 	"sync"
 	"time"
 
+	gnmi_pb "github.com/Juniper/jtimon/gnmi/gnmi"
 	na_pb "github.com/Juniper/jtimon/telemetry"
+	proto "github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/stats"
 )
@@ -18,6 +24,20 @@ type statsCtx struct {
 	totalInPayloadLength     uint64
 	totalInPayloadWireLength uint64
 	totalInHeaderWireLength  uint64
+}
+
+type kpiStats struct {
+	SensorName                   string
+	Path                         string
+	Streamed_path                string
+	Component                    string
+	SequenceNumber               uint64
+	ComponentId                  uint32
+	SubComponentId               uint32
+	Timestamp                    uint64
+	notif_timestamp              int64
+	re_stream_creation_timestamp uint64
+	re_payload_get_timestamp     uint64
 }
 
 type statshandler struct {
@@ -52,10 +72,109 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	case *stats.InPayload:
 		h.jctx.stats.totalInPayloadLength += uint64(s.(*stats.InPayload).Length)
 		h.jctx.stats.totalInPayloadWireLength += uint64(s.(*stats.InPayload).WireLength)
+		if *stateHandler && h.jctx.config.InternalJtimon.CsvLog != "" {
+			switch v := (s.(*stats.InPayload).Payload).(type) {
+			case *na_pb.OpenConfigData:
+				updateStats(h.jctx, v, false)
+				for idx, kv := range v.Kv {
+					updateStatsKV(h.jctx, false, 0)
+					switch kvvalue := kv.Value.(type) {
+					case *na_pb.KeyValue_UintValue:
+						if kv.Key == "__timestamp__" {
+							var re_c_ts uint64 = 0
+							var re_p_get_ts uint64 = 0
+							if len(v.Kv) > idx+2 {
+								nextKV := v.Kv[idx+1]
+								if nextKV.Key == "__junos_re_stream_creation_timestamp__" {
+									re_c_ts = nextKV.GetUintValue()
+								}
+								nextnextKV := v.Kv[idx+2]
+								if nextnextKV.Key == "__junos_re_payload_get_timestamp__" {
+									re_p_get_ts = nextnextKV.GetUintValue()
+								}
+							}
+
+							//"sensor-path", "sequence-number", "component-id", "sub-component-id", "packet-size", "p-ts", "e-ts", "re-stream-creation-ts", "re-payload-get-ts"))
+							h.jctx.config.InternalJtimon.csvLogger.Printf(
+								fmt.Sprintf("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
+									v.Path, v.SequenceNumber, v.ComponentId, v.SubComponentId, s.(*stats.InPayload).Length, v.Timestamp, kvvalue.UintValue, re_c_ts, re_p_get_ts))
+						}
+					}
+				}
+			case *gnmi_pb.SubscribeResponse:
+				stat := h.getKPIStats(v)
+				if stat != nil && stat.Timestamp != 0 {
+					path := stat.SensorName + ":" + stat.Streamed_path + ":" + stat.Path + ":" + stat.Component
+					h.jctx.config.InternalJtimon.csvLogger.Printf(
+						fmt.Sprintf("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
+							path, stat.SequenceNumber, stat.ComponentId, stat.SubComponentId,
+							s.(*stats.InPayload).Length, stat.notif_timestamp, int64(stat.Timestamp*uint64(1000000)),
+							int64(stat.re_stream_creation_timestamp*uint64(1000000)),
+							int64(stat.re_payload_get_timestamp*uint64(1000000)),
+						),
+					)
+				}
+			}
+		}
 	case *stats.InTrailer:
 	case *stats.End:
 	default:
 	}
+}
+
+func (h *statshandler) getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiStats {
+	var jHdrPresent bool
+	stats := new(kpiStats)
+	notfn := subResponse.GetUpdate()
+	if notfn == nil {
+		return nil
+	}
+	stats.notif_timestamp = notfn.Timestamp
+	extns := subResponse.GetExtension()
+
+	if extns != nil {
+		var extIds []gnmi_ext1.ExtensionID
+		for _, ext := range extns {
+			regExtn := ext.GetRegisteredExt()
+			if (regExtn.GetId()) != gnmi_ext1.ExtensionID_EID_JUNIPER_TELEMETRY_HEADER {
+				extIds = append(extIds, regExtn.GetId())
+				continue
+			}
+
+			jHdrPresent = true
+			var hdr gnmi_juniper_header_ext.GnmiJuniperTelemetryHeaderExtension
+			msg := regExtn.GetMsg()
+			err := proto.Unmarshal(msg, &hdr)
+			if err != nil {
+				log.Fatal("unmarshaling error: ", err)
+			}
+
+			stats.ComponentId = hdr.ComponentId
+			stats.SequenceNumber = hdr.SequenceNumber
+			stats.Path = hdr.SubscribedPath
+			stats.SubComponentId = hdr.SubComponentId
+			stats.Component = hdr.Component
+			stats.Streamed_path = hdr.StreamedPath
+			stats.SensorName = hdr.SensorName
+
+			if hdr.ExportTimestamp > 0 {
+				stats.Timestamp = uint64(hdr.ExportTimestamp)
+			}
+			if hdr.PayloadGetTimestamp > 0 {
+				stats.re_payload_get_timestamp = uint64(hdr.PayloadGetTimestamp)
+			}
+			if hdr.StreamCreationTimestamp > 0 {
+				stats.re_stream_creation_timestamp = uint64(hdr.StreamCreationTimestamp)
+			}
+			break
+		}
+		if !jHdrPresent {
+			jLog(h.jctx, fmt.Sprintf(
+				"Juniper header extension not present, available extensions: %v", extIds))
+		}
+	}
+	return stats
+
 }
 
 func updateStats(jctx *JCtx, ocData *na_pb.OpenConfigData, needLock bool) {
@@ -145,4 +264,47 @@ func printSummary(jctx *JCtx) {
 
 	s += fmt.Sprintf("\n")
 	jLog(jctx, fmt.Sprintf("\n%s\n", s))
+}
+
+func isCsvStatsEnabled(jctx *JCtx) bool {
+	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
+		return true
+	}
+	return false
+}
+
+func csvStatsLogInit(jctx *JCtx) {
+	if !*stateHandler && jctx.config.InternalJtimon.CsvLog == "" {
+		return
+	}
+	var out *os.File
+	var err error
+
+	csvStatsFile := "csv-stats.csv"
+	if jctx.config.InternalJtimon.CsvLog == "" {
+		jctx.config.InternalJtimon.CsvLog = csvStatsFile
+	}
+
+	out, err = os.OpenFile(jctx.config.InternalJtimon.CsvLog, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	if err != nil {
+		log.Printf("Could not create csv stats file(%s): %v\n", csvStatsFile, err)
+	}
+
+	if out != nil {
+		flags := 0
+
+		jctx.config.InternalJtimon.csvLogger = log.New(out, "", flags)
+		jctx.config.InternalJtimon.csvOut = out
+
+		log.Printf("Writing stats in %s for %s:%d [in csv format]\n",
+			jctx.config.InternalJtimon.CsvLog, jctx.config.Host, jctx.config.Port)
+	}
+}
+
+func csvStatsLogStop(jctx *JCtx) {
+	if jctx.config.InternalJtimon.csvOut != nil {
+		jctx.config.InternalJtimon.csvOut.Close()
+		jctx.config.InternalJtimon.csvOut = nil
+		jctx.config.InternalJtimon.csvLogger = nil
+	}
 }

@@ -45,6 +45,11 @@ Running config of JTIMON:
         "write-per-measurement": false
     },
     "kafka": null,
+    "internal-jtimon": {
+        "data-log-file": "",
+        "csv-log-file": "",
+        "csv-stats": false
+    },
     "paths": [
         {
             "path": "sub_wdsysmon-fd",

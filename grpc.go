@@ -49,6 +49,10 @@ func getGPRCDialOptions(jctx *JCtx, vendor *vendor) ([]grpc.DialOption, error) {
 
 	if *stateHandler {
 		opts = append(opts, grpc.WithStatsHandler(&statshandler{jctx: jctx}))
+		if isCsvStatsEnabled(jctx) {
+			jctx.config.InternalJtimon.csvLogger.Printf(fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+				"sensor-path", "sequence-number", "component-id", "sub-component-id", "packet-size", "p-ts", "e-ts", "re-stream-creation-ts", "re-payload-get-ts"))
+		}
 	}
 
 	switch *compression {

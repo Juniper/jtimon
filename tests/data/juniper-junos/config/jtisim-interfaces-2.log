@@ -45,6 +45,11 @@ Running config of JTIMON:
         "write-per-measurement": false
     },
     "kafka": null,
+    "internal-jtimon": {
+        "data-log-file": "",
+        "csv-log-file": "",
+        "csv-stats": false
+    },
     "paths": [
         {
             "path": "/interfaces",
@@ -72,55 +77,56 @@ Running config of JTIMON:
 }
 invoking getInfluxClient for init
 invoking getInfluxClient
+127.0.0.1, jctx.config.Kafka.producer: <nil>
 New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
-  jtisim: [yes]
   content-type: [application/grpc]
+  jtisim: [yes]
 Receiving telemetry data from 127.0.0.1:50051
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Wed Feb 14 14:20:27 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:23:21 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Wed Feb 14 14:20:29 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:23:23 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Wed Feb 14 14:20:31 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:23:25 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Wed Feb 14 14:20:33 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:23:27 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Wed Feb 14 14:20:35 PST 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri May 31 02:23:29 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Wed Feb 14 14:20:37 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:23:31 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Wed Feb 14 14:20:39 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:23:33 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Wed Feb 14 14:20:41 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:23:35 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Wed Feb 14 14:20:43 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:23:37 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Wed Feb 14 14:20:45 PST 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri May 31 02:23:39 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Wed Feb 14 14:20:47 PST 2024 |               5940 |                120 |             262258 |             262858 |
+| Fri May 31 02:23:41 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 
-| Wed Feb 14 14:20:49 PST 2024 |               5940 |                120 |             262258 |             262858 |
+| Fri May 31 02:23:43 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 25.000858875s)
+Collector Stats for 127.0.0.1:50051 (Run time : 25.00119025s)
 120          : in-packets
 5940         : data points (KV pairs)
 25           : in-header wirelength (bytes)
