@@ -39,13 +39,6 @@ type kpiStats struct {
 	re_payload_get_timestamp     uint64
 }
 
-// CsvStatsLogging type
-type CsvStatsLogging struct {
-	CsvLog string `json:"csv-log-file"`
-	out    *os.File
-	logger *log.Logger
-}
-
 type statshandler struct {
 	jctx *JCtx
 }
@@ -78,7 +71,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	case *stats.InPayload:
 		h.jctx.stats.totalInPayloadLength += uint64(s.(*stats.InPayload).Length)
 		h.jctx.stats.totalInPayloadWireLength += uint64(s.(*stats.InPayload).WireLength)
-		if *csvStats {
+		if !*stateHandler && !h.jctx.config.InternalJtimon.CsvStats {
 			switch v := (s.(*stats.InPayload).Payload).(type) {
 			case *na_pb.OpenConfigData:
 				updateStats(h.jctx, v, false)
@@ -101,7 +94,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 							}
 
 							//"sensor-path", "sequence-number", "component-id", "sub-component-id", "packet-size", "p-ts", "e-ts", "re-stream-creation-ts", "re-payload-get-ts"))
-							h.jctx.config.CsvStatsJtimon.logger.Printf(
+							h.jctx.config.InternalJtimon.csvLogger.Printf(
 								fmt.Sprintf("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
 									v.Path, v.SequenceNumber, v.ComponentId, v.SubComponentId, s.(*stats.InPayload).Length, v.Timestamp, kvvalue.UintValue, re_c_ts, re_p_get_ts))
 						}
@@ -111,7 +104,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 				stat := getKPIStats(v)
 				if stat != nil && stat.Timestamp != 0 {
 					path := stat.SensorName + ":" + stat.Streamed_path + ":" + stat.Path + ":" + stat.Component
-					h.jctx.config.CsvStatsJtimon.logger.Printf(
+					h.jctx.config.InternalJtimon.csvLogger.Printf(
 						fmt.Sprintf("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
 							path, stat.SequenceNumber, stat.ComponentId, stat.SubComponentId,
 							s.(*stats.InPayload).Length, stat.notif_timestamp, int64(stat.Timestamp*uint64(1000000)),
@@ -263,22 +256,22 @@ func printSummary(jctx *JCtx) {
 }
 
 func isCsvStatsEnabled(jctx *JCtx) bool {
-	return jctx.config.CsvStatsJtimon.logger != nil
+	return jctx.config.InternalJtimon.CsvStats
 }
 
 func csvStatsLogInit(jctx *JCtx) {
-	if !*csvStats && jctx.config.CsvStatsJtimon.CsvLog == "" {
+	if !*stateHandler && !jctx.config.InternalJtimon.CsvStats {
 		return
 	}
 	var out *os.File
 	var err error
 
 	csvStatsFile := "csv-stats.csv"
-	if jctx.config.CsvStatsJtimon.CsvLog == "" {
-		jctx.config.CsvStatsJtimon.CsvLog = csvStatsFile
+	if jctx.config.InternalJtimon.CsvLog == "" {
+		jctx.config.InternalJtimon.CsvLog = csvStatsFile
 	}
 
-	out, err = os.OpenFile(jctx.config.CsvStatsJtimon.CsvLog, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	out, err = os.OpenFile(jctx.config.InternalJtimon.CsvLog, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Printf("Could not create csv stats file(%s): %v\n", csvStatsFile, err)
 	}
@@ -286,18 +279,18 @@ func csvStatsLogInit(jctx *JCtx) {
 	if out != nil {
 		flags := 0
 
-		jctx.config.CsvStatsJtimon.logger = log.New(out, "", flags)
-		jctx.config.CsvStatsJtimon.out = out
+		jctx.config.InternalJtimon.csvLogger = log.New(out, "", flags)
+		jctx.config.InternalJtimon.csvOut = out
 
 		log.Printf("Writing stats in %s for %s:%d [in csv format]\n",
-			jctx.config.CsvStatsJtimon.CsvLog, jctx.config.Host, jctx.config.Port)
+			jctx.config.InternalJtimon.CsvLog, jctx.config.Host, jctx.config.Port)
 	}
 }
 
 func csvStatsLogStop(jctx *JCtx) {
-	if jctx.config.CsvStatsJtimon.out != nil {
-		jctx.config.CsvStatsJtimon.out.Close()
-		jctx.config.CsvStatsJtimon.out = nil
-		jctx.config.CsvStatsJtimon.logger = nil
+	if jctx.config.InternalJtimon.csvOut != nil {
+		jctx.config.InternalJtimon.csvOut.Close()
+		jctx.config.InternalJtimon.csvOut = nil
+		jctx.config.InternalJtimon.csvLogger = nil
 	}
 }
