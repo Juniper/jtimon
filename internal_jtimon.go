@@ -110,7 +110,7 @@ func getPath(prefixPath string, pathElements []*gnmi.PathElem) string {
 }
 
 func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *gnmi.SubscribeResponse) {
-	if jctx.config.InternalJtimon.logger == nil {
+	if jctx.config.InternalJtimon.logger == nil || parseOutput.jHeader == nil {
 		return
 	}
 
