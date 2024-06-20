@@ -21,6 +21,8 @@ type InternalJtimonConfig struct {
 	logger        *log.Logger
 	preGnmiLogger *log.Logger
 	csvLogger     *log.Logger
+	GnmiEOS       bool `json:"gnmi-eos"`
+	PreGnmiEOS    bool `json:"pre-gnmi-eos"`
 }
 
 func internalJtimonLogInit(jctx *JCtx) {

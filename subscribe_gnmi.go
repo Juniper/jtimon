@@ -291,7 +291,8 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 		parseOutput = &tmpParseOp
 		err         error
 
-		hostname = jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
+		eosEnabled = false
+		hostname   = jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
 	)
 
 	// Update packet stats
@@ -316,7 +317,11 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 	updateStatsKV(jctx, true, parseOutput.inKvs)
 
 	// Ignore all packets till sync response is received.
-	if !jctx.config.EOS {
+	eosEnabled = jctx.config.EOS
+	if isInternalJtimonLogging(jctx) {
+		eosEnabled = jctx.config.InternalJtimon.GnmiEOS
+	}
+	if !eosEnabled {
 		if !jctx.receivedSyncRsp {
 			if parseOutput.jHeader != nil {
 				// For juniper packets, ignore only the packets which are numbered in initial sync sequence range
