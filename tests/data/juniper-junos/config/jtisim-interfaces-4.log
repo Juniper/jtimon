@@ -48,7 +48,8 @@ Running config of JTIMON:
     "internal-jtimon": {
         "data-log-file": "",
         "csv-log-file": "",
-        "csv-stats": false
+        "gnmi-eos": false,
+        "pre-gnmi-eos": false
     },
     "paths": [
         {
@@ -82,11 +83,9 @@ New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:90052
 subscribe returns, reconnecting after 10s for worker tests/data/juniper-junos/config/jtisim-interfaces-4.json
-compression = none
-Reconnecting to 127.0.0.1:90052
 
 
-Collector Stats for 127.0.0.1:90052 (Run time : 10.004200459s)
+Collector Stats for 127.0.0.1:90052 (Run time : 10.00228125s)
 0            : in-packets
 0            : data points (KV pairs)
 0            : in-header wirelength (bytes)
@@ -96,6 +95,5 @@ Collector Stats for 127.0.0.1:90052 (Run time : 10.004200459s)
 
 
 Streaming for host 127.0.0.1 will be stopped (SIGINT)
-subscribe returns, reconnecting after 10s for worker tests/data/juniper-junos/config/jtisim-interfaces-4.json
 compression = none
 Connection for 127.0.0.1:90052 has been interrupted

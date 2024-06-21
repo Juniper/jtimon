@@ -48,7 +48,8 @@ Running config of JTIMON:
     "internal-jtimon": {
         "data-log-file": "",
         "csv-log-file": "",
-        "csv-stats": false
+        "gnmi-eos": false,
+        "pre-gnmi-eos": false
     },
     "paths": [
         {
@@ -89,14 +90,14 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Fri May 31 02:22:17 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Thu Jun 20 22:57:21 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:22:19 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Thu Jun 20 22:57:23 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 6.005650209s)
+Collector Stats for 127.0.0.1:50051 (Run time : 6.002609541s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)
