@@ -48,7 +48,8 @@ Running config of JTIMON:
     "internal-jtimon": {
         "data-log-file": "",
         "csv-log-file": "",
-        "csv-stats": false
+        "gnmi-eos": false,
+        "pre-gnmi-eos": false
     },
     "paths": [
         {
@@ -85,57 +86,57 @@ New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
-  content-type: [application/grpc]
   jtisim: [yes]
+  content-type: [application/grpc]
 Receiving telemetry data from 127.0.0.1:50051
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Fri May 31 02:22:23 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Tue Jun 25 11:38:06 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 Batch write successful! Post batch write available points:  0
 
-| Fri May 31 02:22:25 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Tue Jun 25 11:38:08 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:22:27 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Tue Jun 25 11:38:10 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:22:29 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Tue Jun 25 11:38:12 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:22:31 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
-
-Batch processing: #packets:40 #points:40
-
-| Fri May 31 02:22:33 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
-
-Batch write successful! Post batch write available points:  0
-
-| Fri May 31 02:22:35 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
-
-
-| Fri May 31 02:22:37 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
-
-
-| Fri May 31 02:22:39 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
-
-
-| Fri May 31 02:22:41 PDT 2024 |               5367 |                109 |             236698 |             237243 |
+| Tue Jun 25 11:38:14 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 
-| Fri May 31 02:22:43 PDT 2024 |               5940 |                120 |             262258 |             262858 |
+| Tue Jun 25 11:38:16 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 Batch write successful! Post batch write available points:  0
 
-| Fri May 31 02:22:45 PDT 2024 |               5940 |                120 |             262258 |             262858 |
+| Tue Jun 25 11:38:18 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Tue Jun 25 11:38:20 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Tue Jun 25 11:38:22 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Tue Jun 25 11:38:24 PDT 2024 |               4040 |                 82 |             178196 |             178606 |
+
+Batch processing: #packets:40 #points:40
+
+| Tue Jun 25 11:38:26 PDT 2024 |               5940 |                120 |             262258 |             262858 |
+
+Batch write successful! Post batch write available points:  0
+
+| Tue Jun 25 11:38:28 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 25.004155208s)
+Collector Stats for 127.0.0.1:50051 (Run time : 25.004049042s)
 120          : in-packets
 5940         : data points (KV pairs)
 25           : in-header wirelength (bytes)

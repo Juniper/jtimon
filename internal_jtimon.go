@@ -21,6 +21,19 @@ type InternalJtimonConfig struct {
 	logger        *log.Logger
 	preGnmiLogger *log.Logger
 	csvLogger     *log.Logger
+	GnmiEOS       bool `json:"gnmi-eos"`
+	PreGnmiEOS    bool `json:"pre-gnmi-eos"`
+}
+
+func initInternalJtimon(jctx *JCtx) {
+	// if Internal Jtimon EOS value is not set,
+	// then take the EOS value from parent config
+	if !jctx.config.InternalJtimon.GnmiEOS {
+		jctx.config.InternalJtimon.GnmiEOS = jctx.config.EOS
+	}
+	if !jctx.config.InternalJtimon.PreGnmiEOS {
+		jctx.config.InternalJtimon.PreGnmiEOS = jctx.config.EOS
+	}
 }
 
 func internalJtimonLogInit(jctx *JCtx) {

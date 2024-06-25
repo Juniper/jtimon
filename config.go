@@ -323,6 +323,7 @@ func HandleConfigChange(jctx *JCtx, config Config, restart *bool) error {
 		jctx.config = config
 		logInit(jctx)
 		internalJtimonLogInit(jctx)
+		initInternalJtimon(jctx)
 		if restart != nil {
 			jLog(jctx, fmt.Sprintf("Restarting worker process to spawn new device connection for: %s", jctx.file))
 			*restart = true
@@ -348,6 +349,7 @@ func ConfigRead(jctx *JCtx, init bool, restart *bool) error {
 		jctx.config = config
 		logInit(jctx)
 		internalJtimonLogInit(jctx)
+		initInternalJtimon(jctx)
 		b, err := json.MarshalIndent(jctx.config, "", "    ")
 		if err != nil {
 			return fmt.Errorf("config parsing error (json marshal) for %s: %v", jctx.file, err)

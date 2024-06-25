@@ -48,7 +48,8 @@ Running config of JTIMON:
     "internal-jtimon": {
         "data-log-file": "",
         "csv-log-file": "",
-        "csv-stats": false
+        "gnmi-eos": false,
+        "pre-gnmi-eos": false
     },
     "paths": [
         {
