@@ -237,6 +237,10 @@ func subscribeJunos(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []Paths
 		subReqM.PathList = append(subReqM.PathList, &pathM)
 	}
 	additionalConfigM.NeedEos = jctx.config.EOS
+	// Override EOS if InternalJtimon is configured
+	if isInternalJtimonLogging(jctx) {
+		additionalConfigM.NeedEos = jctx.config.InternalJtimon.PreGnmiEOS
+	}
 	subReqM.AdditionalConfig = &additionalConfigM
 
 	return subSendAndReceive(conn, jctx, subReqM)
