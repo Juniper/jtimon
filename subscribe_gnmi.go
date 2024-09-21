@@ -99,12 +99,21 @@ func publishToPrometheus(jctx *JCtx, parseOutput *gnmiParseOutputT) {
 }
 
 /*
- * Publish parsed output to Influx. Make sure there are only inegers,
+ * Publish parsed output to Influx. Make sure there are only integers,
  * floats and strings. Influx Line Protocol doesn't support other types
  */
 func publishToInflux(jctx *JCtx, mName string, prefixPath string, kvpairs map[string]string, xpaths map[string]interface{}) error {
 	if !gGnmiUnitTestCoverage && jctx.influxCtx.influxClient == nil {
 		return nil
+	}
+
+	// Convert leaf-list values if present in xpaths for influxdb Point write
+	for key, value := range xpaths {
+		// Check if the value is a slice
+		if members, ok := value.([]string); ok {
+			// Join the slice elements into a single string separated by commas
+			xpaths[key] = strings.Join(members, ", ")
+		}
 	}
 
 	pt, err := client.NewPoint(mName, kvpairs, xpaths, time.Now())
