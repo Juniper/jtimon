@@ -112,7 +112,7 @@ func publishToInflux(jctx *JCtx, mName string, prefixPath string, kvpairs map[st
 		// Check if the value is a slice
 		if members, ok := value.([]string); ok {
 			// Join the slice elements into a single string separated by commas
-			xpaths[key] = strings.Join(members, ", ")
+			xpaths[key] = strings.Join(members, ",")
 		}
 	}
 
