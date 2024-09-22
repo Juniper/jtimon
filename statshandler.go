@@ -264,6 +264,11 @@ func printSummary(jctx *JCtx) {
 
 	s += fmt.Sprintf("\n")
 	jLog(jctx, fmt.Sprintf("\n%s\n", s))
+
+	// Print Summary to terminal for internal Jitmon
+	if jctx.config.InternalJtimon.CsvLog != "" {
+		fmt.Println(s)
+	}
 }
 
 func isCsvStatsEnabled(jctx *JCtx) bool {

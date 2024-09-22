@@ -48,7 +48,8 @@ Running config of JTIMON:
     "internal-jtimon": {
         "data-log-file": "",
         "csv-log-file": "",
-        "csv-stats": false
+        "gnmi-eos": false,
+        "pre-gnmi-eos": false
     },
     "paths": [
         {
@@ -82,51 +83,51 @@ New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
-  content-type: [application/grpc]
   jtisim: [yes]
+  content-type: [application/grpc]
 Receiving telemetry data from 127.0.0.1:50051
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Fri May 31 02:23:21 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Sat Sep 21 13:58:47 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:23:23 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Sat Sep 21 13:58:49 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:23:25 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Sat Sep 21 13:58:51 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:23:27 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Sat Sep 21 13:58:53 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:23:29 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Sat Sep 21 13:58:55 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:23:31 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Sat Sep 21 13:58:57 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 02:23:33 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Sat Sep 21 13:58:59 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 02:23:35 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Sat Sep 21 13:59:01 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 02:23:37 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Sat Sep 21 13:59:03 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 02:23:39 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Sat Sep 21 13:59:05 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 02:23:41 PDT 2024 |               5940 |                120 |             262258 |             262858 |
+| Sat Sep 21 13:59:07 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 
-| Fri May 31 02:23:43 PDT 2024 |               5940 |                120 |             262258 |             262858 |
+| Sat Sep 21 13:59:09 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 25.002534292s)
+Collector Stats for 127.0.0.1:50051 (Run time : 25.004069667s)
 120          : in-packets
 5940         : data points (KV pairs)
 25           : in-header wirelength (bytes)
