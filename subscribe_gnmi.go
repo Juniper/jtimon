@@ -165,7 +165,7 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 		ok                bool
 		err               error
 
-		verboseSensorDetails, mName string
+		verboseSensorDetails, mName, stName string
 	)
 
 	prefixPath := parseOutput.prefixPath
@@ -221,10 +221,14 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 		verboseSensorDetails = hdr.GetSensorName() + gGnmiVerboseSensorDetailsDelim +
 			hdr.GetStreamedPath() + gGnmiVerboseSensorDetailsDelim +
 			hdr.GetSubscribedPath() + gGnmiVerboseSensorDetailsDelim +
-			hdr.GetComponent()
+			hdr.GetComponent() + gGnmiVerboseSensorDetailsDelim + strconv.FormatBool(hdr.GetEom())
 
 		if hdr.GetSubscribedPath() != "" {
 			mName = hdr.GetSubscribedPath()
+		}
+		stName = ""
+		if hdr.GetStreamedPath() != "" {
+			stName = hdr.GetStreamedPath()
 		}
 		xpathVal[prefixPath+gXPathTokenPathSep+gGnmiJtimonExportTsName] = hdr.GetExportTimestamp()
 
@@ -236,6 +240,7 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 	parseOutput.jHeader = juniperHdrDetails
 	parseOutput.sensorVal = verboseSensorDetails
 	parseOutput.mName = mName
+	parseOutput.stName = stName
 	return parseOutput, nil
 }
 
@@ -364,6 +369,8 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 	parseOutput.kvpairs["device"] = jctx.config.Host
 	parseOutput.kvpairs["sensor"] = parseOutput.sensorVal
 	parseOutput.xpaths["vendor"] = "gnmi"
+	parseOutput.xpaths["initialsync"] = strconv.FormatBool(jctx.receivedSyncRsp)
+	parseOutput.kvpairs["streamedpath"] = parseOutput.stName
 
 	if *prom {
 		if *noppgoroutines {
@@ -408,6 +415,7 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 						parseOutput.kvpairs[v] = strVal
 					}
 				}
+				parseOutput.xpaths["eom"] = strconv.FormatBool(parseOutput.jHeader.hdrExt.GetEom())
 			}
 
 		}

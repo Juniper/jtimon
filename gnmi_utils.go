@@ -67,6 +67,7 @@ type gnmiParseOutputT struct {
 	xpaths     map[string]interface{}
 	sensorVal  string
 	mName      string
+	stName     string
 	jXpaths    *jnprXpathDetails
 	jHeader    *juniperGnmiHeaderDetails
 	inKvs      uint64
