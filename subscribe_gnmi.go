@@ -150,6 +150,44 @@ func publishToInflux(jctx *JCtx, mName string, prefixPath string, kvpairs map[st
 	return nil
 }
 
+func publishKPIToInflux(jctx *JCtx, mName string, tags map[string]string, fields map[string]interface{}) error {
+	if !gGnmiUnitTestCoverage && jctx.influxCtx.influxClient == nil {
+		return nil
+	}
+
+	pt, err := client.NewPoint(mName, tags, fields, time.Now())
+	if err != nil {
+		msg := fmt.Sprintf("New point creation failed for (key: %v, xpaths: %v): %v", tags, fields, err)
+		jLog(jctx, msg)
+		return errors.New(msg)
+	}
+	if jctx.config.Influx.WritePerMeasurement {
+		if *print || IsVerboseLogging(jctx) {
+			msg := fmt.Sprintf("New point (per measurement): %v", pt.String())
+			jLog(jctx, msg)
+		}
+
+		if !gGnmiUnitTestCoverage {
+			jctx.influxCtx.batchWMCh <- &batchWMData{
+				measurement: mName,
+				points:      []*client.Point{pt},
+			}
+		}
+	} else {
+		if *print || IsVerboseLogging(jctx) {
+			msg := fmt.Sprintf("New point: %v", pt.String())
+			jLog(jctx, msg)
+		}
+
+		if !gGnmiUnitTestCoverage {
+			jctx.influxCtx.batchWCh <- []*client.Point{pt}
+		}
+	}
+
+	return nil
+
+}
+
 /*
  * Extract the following from gNMI response and already parsed output:
  *   1. Juniper telemetry header, if it is a Juniper packet
