@@ -175,7 +175,7 @@ func subSendAndReceive(conn *grpc.ClientConn, jctx *JCtx,
 				}
 			}
 
-			if *print || *stateHandler || IsVerboseLogging(jctx) || isInternalJtimonLogging(jctx) {
+			if *print || *statsHandler || IsVerboseLogging(jctx) || isInternalJtimonLogging(jctx) {
 				handleOnePacket(ocData, jctx)
 			}
 

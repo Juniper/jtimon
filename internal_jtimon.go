@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
-	na_pb "github.com/Juniper/jtimon/telemetry"
 	"log"
 	"os"
 	"regexp"
 	"strings"
+
+	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
+	na_pb "github.com/Juniper/jtimon/telemetry"
 )
 
 // InternalJtimonConfig type
@@ -37,46 +38,45 @@ func initInternalJtimon(jctx *JCtx) {
 }
 
 func internalJtimonLogInit(jctx *JCtx) {
-	if jctx.config.InternalJtimon.DataLog == "" {
-		return
+	if jctx.config.InternalJtimon.DataLog != "" {
+		var out *os.File
+
+		var err error
+		// Gnmi
+		out, err = os.OpenFile(jctx.config.InternalJtimon.DataLog, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+		if err != nil {
+			log.Printf("Could not create internal jtimon log file(%s): %v\n", jctx.config.InternalJtimon.DataLog, err)
+		}
+
+		if out != nil {
+			flags := 0
+
+			jctx.config.InternalJtimon.logger = log.New(out, "", flags)
+			jctx.config.InternalJtimon.out = out
+
+			log.Printf("logging in %s for %s:%d [in the format of internal jtimon tool]\n",
+				jctx.config.InternalJtimon.DataLog, jctx.config.Host, jctx.config.Port)
+		}
+
+		// Pre-gnmi
+		var outPreGnmi *os.File
+		outPreGnmi, err = os.OpenFile(fmt.Sprintf("%s_pre-gnmi", jctx.config.InternalJtimon.DataLog), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+		if err != nil {
+			log.Printf("Could not create internal jtimon log file(%s_pre-gnmi): %v\n", jctx.config.InternalJtimon.DataLog, err)
+		}
+
+		if outPreGnmi != nil {
+			flags := 0
+
+			jctx.config.InternalJtimon.preGnmiLogger = log.New(outPreGnmi, "", flags)
+			jctx.config.InternalJtimon.preGnmiOut = outPreGnmi
+
+			log.Printf("logging in %s_pre-gnmi for %s:%d [in the format of internal jtimon tool]\n",
+				jctx.config.InternalJtimon.DataLog, jctx.config.Host, jctx.config.Port)
+		}
 	}
-	var out *os.File
 
-	var err error
-	// Gnmi
-	out, err = os.OpenFile(jctx.config.InternalJtimon.DataLog, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-	if err != nil {
-		log.Printf("Could not create internal jtimon log file(%s): %v\n", jctx.config.InternalJtimon.DataLog, err)
-	}
-
-	if out != nil {
-		flags := 0
-
-		jctx.config.InternalJtimon.logger = log.New(out, "", flags)
-		jctx.config.InternalJtimon.out = out
-
-		log.Printf("logging in %s for %s:%d [in the format of internal jtimon tool]\n",
-			jctx.config.InternalJtimon.DataLog, jctx.config.Host, jctx.config.Port)
-	}
-
-	// Pre-gnmi
-	var outPreGnmi *os.File
-	outPreGnmi, err = os.OpenFile(fmt.Sprintf("%s_pre-gnmi", jctx.config.InternalJtimon.DataLog), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-	if err != nil {
-		log.Printf("Could not create internal jtimon log file(%s_pre-gnmi): %v\n", jctx.config.InternalJtimon.DataLog, err)
-	}
-
-	if outPreGnmi != nil {
-		flags := 0
-
-		jctx.config.InternalJtimon.preGnmiLogger = log.New(outPreGnmi, "", flags)
-		jctx.config.InternalJtimon.preGnmiOut = outPreGnmi
-
-		log.Printf("logging in %s_pre-gnmi for %s:%d [in the format of internal jtimon tool]\n",
-			jctx.config.InternalJtimon.DataLog, jctx.config.Host, jctx.config.Port)
-	}
-
-	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
+	if *statsHandler && jctx.config.InternalJtimon.CsvLog != "" {
 		csvStatsLogInit(jctx)
 	}
 }
@@ -92,7 +92,7 @@ func internalJtimonLogStop(jctx *JCtx) {
 		jctx.config.InternalJtimon.preGnmiOut = nil
 		jctx.config.InternalJtimon.preGnmiLogger = nil
 	}
-	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
+	if *statsHandler && jctx.config.InternalJtimon.CsvLog != "" {
 		csvStatsLogStop(jctx)
 	}
 }
@@ -123,7 +123,7 @@ func getPath(prefixPath string, pathElements []*gnmi.PathElem) string {
 }
 
 func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *gnmi.SubscribeResponse) {
-	if jctx.config.InternalJtimon.logger == nil || parseOutput.jHeader == nil {
+	if jctx.config.InternalJtimon.logger == nil || parseOutput.jHeader == nil || jctx.config.InternalJtimon.DataLog != "" {
 		return
 	}
 
@@ -226,7 +226,7 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 }
 
 func jLogInternalJtimonForPreGnmi(jctx *JCtx, ocdata *na_pb.OpenConfigData, outString string) {
-	if jctx.config.InternalJtimon.logger == nil {
+	if jctx.config.InternalJtimon.logger == nil || jctx.config.InternalJtimon.DataLog != "" {
 		return
 	}
 

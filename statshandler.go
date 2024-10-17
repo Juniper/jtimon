@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	gnmi_ext1 "github.com/Juniper/jtimon/gnmi/gnmi_ext"
-	gnmi_juniper_header_ext "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header_ext"
 	"log"
 	"os"
 	"sync"
 	"time"
+
+	gnmi_ext1 "github.com/Juniper/jtimon/gnmi/gnmi_ext"
+	gnmi_juniper_header_ext "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header_ext"
 
 	gnmi_pb "github.com/Juniper/jtimon/gnmi/gnmi"
 	na_pb "github.com/Juniper/jtimon/telemetry"
@@ -72,7 +73,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	case *stats.InPayload:
 		h.jctx.stats.totalInPayloadLength += uint64(s.(*stats.InPayload).Length)
 		h.jctx.stats.totalInPayloadWireLength += uint64(s.(*stats.InPayload).WireLength)
-		if *stateHandler && h.jctx.config.InternalJtimon.CsvLog != "" {
+		if *statsHandler && h.jctx.config.InternalJtimon.CsvLog != "" {
 			switch v := (s.(*stats.InPayload).Payload).(type) {
 			case *na_pb.OpenConfigData:
 				updateStats(h.jctx, v, false)
@@ -178,7 +179,7 @@ func (h *statshandler) getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiS
 }
 
 func updateStats(jctx *JCtx, ocData *na_pb.OpenConfigData, needLock bool) {
-	if !*stateHandler {
+	if !*statsHandler {
 		return
 	}
 	if needLock {
@@ -189,7 +190,7 @@ func updateStats(jctx *JCtx, ocData *na_pb.OpenConfigData, needLock bool) {
 }
 
 func updateStatsKV(jctx *JCtx, needLock bool, count uint64) {
-	if !*stateHandler {
+	if !*statsHandler {
 		return
 	}
 
@@ -201,7 +202,7 @@ func updateStatsKV(jctx *JCtx, needLock bool, count uint64) {
 }
 
 func periodicStats(jctx *JCtx) {
-	if !*stateHandler {
+	if !*statsHandler {
 		return
 	}
 	pstats := jctx.config.Log.PeriodicStats
@@ -245,7 +246,7 @@ func periodicStats(jctx *JCtx) {
 }
 
 func printSummary(jctx *JCtx) {
-	if !*stateHandler {
+	if !*statsHandler {
 		return
 	}
 
@@ -272,14 +273,14 @@ func printSummary(jctx *JCtx) {
 }
 
 func isCsvStatsEnabled(jctx *JCtx) bool {
-	if *stateHandler && jctx.config.InternalJtimon.CsvLog != "" {
+	if *statsHandler && jctx.config.InternalJtimon.CsvLog != "" {
 		return true
 	}
 	return false
 }
 
 func csvStatsLogInit(jctx *JCtx) {
-	if !*stateHandler && jctx.config.InternalJtimon.CsvLog == "" {
+	if !*statsHandler && jctx.config.InternalJtimon.CsvLog == "" {
 		return
 	}
 	var out *os.File
