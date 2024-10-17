@@ -83,18 +83,18 @@ New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
-  jtisim: [yes]
   content-type: [application/grpc]
+  jtisim: [yes]
 Receiving telemetry data from 127.0.0.1:50051
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Sat Sep 21 13:56:59 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Oct 16 22:06:02 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 3.993855375s)
+Collector Stats for 127.0.0.1:50051 (Run time : 3.999050845s)
 40           : in-packets
 1980         : data points (KV pairs)
 25           : in-header wirelength (bytes)
