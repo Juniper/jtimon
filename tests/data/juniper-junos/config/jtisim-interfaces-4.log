@@ -87,7 +87,7 @@ compression = none
 Reconnecting to 127.0.0.1:90052
 
 
-Collector Stats for 127.0.0.1:90052 (Run time : 10.004244167s)
+Collector Stats for 127.0.0.1:90052 (Run time : 10.00158514s)
 0            : in-packets
 0            : data points (KV pairs)
 0            : in-header wirelength (bytes)

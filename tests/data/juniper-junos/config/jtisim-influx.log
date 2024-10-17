@@ -93,50 +93,50 @@ Receiving telemetry data from 127.0.0.1:50051
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Sat Sep 21 13:57:49 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Oct 16 22:42:59 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 Batch processing: #packets:40 #points:40
 Batch write successful! Post batch write available points:  0
 
-| Sat Sep 21 13:57:51 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Oct 16 22:43:01 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Sat Sep 21 13:57:53 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Oct 16 22:43:03 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Sat Sep 21 13:57:55 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Oct 16 22:43:05 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Sat Sep 21 13:57:57 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Wed Oct 16 22:43:07 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+
+
+| Wed Oct 16 22:43:09 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+
+Batch processing: #packets:40 #points:40
+Batch write successful! Post batch write available points:  0
+
+| Wed Oct 16 22:43:11 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Wed Oct 16 22:43:13 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Wed Oct 16 22:43:15 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+
+
+| Wed Oct 16 22:43:17 PDT 2024 |               4158 |                 84 |             183580 |             184000 |
 
 Batch processing: #packets:40 #points:40
 
-| Sat Sep 21 13:57:59 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Wed Oct 16 22:43:19 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 Batch write successful! Post batch write available points:  0
 
-| Sat Sep 21 13:58:01 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
-
-
-| Sat Sep 21 13:58:03 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
-
-
-| Sat Sep 21 13:58:05 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
-
-
-| Sat Sep 21 13:58:07 PDT 2024 |               5940 |                120 |             262258 |             262858 |
-
-Batch processing: #packets:40 #points:40
-
-| Sat Sep 21 13:58:09 PDT 2024 |               5940 |                120 |             262258 |             262858 |
-
-Batch write successful! Post batch write available points:  0
-
-| Sat Sep 21 13:58:11 PDT 2024 |               5940 |                120 |             262258 |             262858 |
+| Wed Oct 16 22:43:21 PDT 2024 |               5940 |                120 |             262258 |             262858 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 25.002847916s)
+Collector Stats for 127.0.0.1:50051 (Run time : 25.003309177s)
 120          : in-packets
 5940         : data points (KV pairs)
 25           : in-header wirelength (bytes)
