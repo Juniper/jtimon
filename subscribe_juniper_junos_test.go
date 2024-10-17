@@ -17,7 +17,7 @@ import (
 func TestJTISIMSigHup(t *testing.T) {
 	flag.Parse()
 	*noppgoroutines = true
-	*stateHandler = true
+	*statsHandler = true
 	*prefixCheck = true
 
 	config := "tests/data/juniper-junos/config/jtisim-interfaces-file-list-sig.json"
@@ -152,7 +152,7 @@ func TestJTISIMSigHup(t *testing.T) {
 func TestJTISIMSigHupChanged(t *testing.T) {
 	flag.Parse()
 	*noppgoroutines = true
-	*stateHandler = true
+	*statsHandler = true
 	*prefixCheck = true
 
 	config := "tests/data/juniper-junos/config/jtisim-interfaces-file-list-sig.json"
@@ -284,7 +284,7 @@ func TestJTISIMSigHupChanged(t *testing.T) {
 func TestJTISIMSigInt(t *testing.T) {
 	flag.Parse()
 	*noppgoroutines = true
-	*stateHandler = true
+	*statsHandler = true
 	*prefixCheck = true
 
 	config := "tests/data/juniper-junos/config/jtisim-interfaces-file-list-sig.json"
@@ -323,7 +323,7 @@ func TestJTISIMSigInt(t *testing.T) {
 func TestJTISIMRetrySigInt(t *testing.T) {
 	flag.Parse()
 	*noppgoroutines = true
-	*stateHandler = true
+	*statsHandler = true
 	*prefixCheck = true
 
 	config := "tests/data/juniper-junos/config/jtisim-interfaces-file-list-sig-int.json"
@@ -385,7 +385,7 @@ func TestPrometheus(t *testing.T) {
 			port := 8090
 
 			*noppgoroutines = true
-			*stateHandler = true
+			*statsHandler = true
 			*prom = true
 			exporter = promInit()
 
@@ -528,7 +528,7 @@ func TestJTISIMMaxRun(t *testing.T) {
 		t.Run(test.name+test.compression, func(t *testing.T) {
 			flag.Parse()
 			*noppgoroutines = true
-			*stateHandler = true
+			*statsHandler = true
 			*prefixCheck = true
 			*compression = test.compression
 
