@@ -123,22 +123,11 @@ func getPath(prefixPath string, pathElements []*gnmi.PathElem) string {
 }
 
 func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *gnmi.SubscribeResponse) {
-	if jctx.config.InternalJtimon.logger == nil || parseOutput.jHeader == nil || jctx.config.InternalJtimon.DataLog != "" {
+	if jctx.config.InternalJtimon.logger == nil || parseOutput.jHeader == nil || jctx.config.InternalJtimon.DataLog == "" {
 		return
 	}
 
-	// Log here in the format of internal jtimon
-	//var (
-	//	jxpaths  map[string]interface{}
-	//	jGnmiHdr string
-	//)
-
-	s := ""
-	//if parseOutput.jHeader.hdr != nil {
-	//	s += fmt.Sprintf("system_id: %s\n", parseOutput.jHeader.hdr.String())
-	//} else {
-	//	s += fmt.Sprintf("system_id: %s\n", parseOutput.jHeader.hdrExt.String())
-	//}
+	s := "" // Keep the original string format
 	var jHeaderData map[string]interface{}
 	jGnmiHdrExt, err := json.Marshal(parseOutput.jHeader.hdrExt)
 	if err != nil {
@@ -151,6 +140,9 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 		return
 	}
 
+	// Prepare outputData for JSON format
+	outputData := make(map[string]interface{}) // Map to hold the JSON output
+
 	outJHeaderKeys := []string{
 		"system_id",
 		"component_id",
@@ -161,6 +153,7 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 		"sequence_number",
 		"export_timestamp",
 	}
+
 	for _, v := range outJHeaderKeys {
 		if _, ok := jHeaderData[v]; ok {
 			strVal := convertToString(jHeaderData[v])
@@ -169,13 +162,17 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 					"to Streamed path. Unable to convert extension value: %v to string. ", v, jHeaderData[v]))
 				continue
 			}
+			// Add to plain string format
 			s += fmt.Sprintf("%s: %s\n", v, strVal)
+
+			// Add to JSON structure
+			outputData[v] = strVal
 		}
 	}
 
 	notif := rsp.GetUpdate()
 	if notif != nil {
-		// Form an xpath for prefix here, as the internal jtimon tool does it this way.
+		// Plain text formatting
 		prefixPath := ""
 		if !jctx.config.Vendor.RemoveNS {
 			prefixPath = notif.Prefix.GetOrigin()
@@ -192,37 +189,69 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 		s += fmt.Sprintf(
 			"Update {\n\ttimestamp: %d\n\tprefix: %v\n", notif.GetTimestamp(), prefixPath)
 
-		// Parse all the deletes here
+		// Create a map to hold notification data for JSON output
+		notifData := make(map[string]interface{})
+		notifData["timestamp"] = notif.GetTimestamp()
+		notifData["prefix"] = prefixPath
+
+		// Parse delete paths (both for string and JSON)
+		var delPaths []string
 		for _, d := range notif.Delete {
 			delPath := getPath(prefixPath, d.GetElem())
-			s += fmt.Sprintf("del_path: %s", delPath)
+			s += fmt.Sprintf("del_path: %s\n", delPath)
+			delPaths = append(delPaths, delPath)
 		}
+		notifData["del_paths"] = delPaths
 
-		// Parse all the updates here
+		// Parse updates (both for string and JSON)
+		var updates []map[string]interface{}
 		for _, u := range notif.Update {
-			notifString := u.String()
 			s += fmt.Sprintf("Update {\n\tpath {\n")
+
+			update := make(map[string]interface{})
+
 			re := regexp.MustCompile(`name:\"(.*?)\"`)
 			matches := re.FindAllStringSubmatch(u.String(), -1)
+			var elems []string
 			for _, match := range matches {
-				s += fmt.Sprintf("\t\telem {\n\t\t\t")
-				s += fmt.Sprintf("name: %s\n\t\t}\n", match[1])
+				s += fmt.Sprintf("\t\telem {\n\t\t\tname: %s\n\t\t}\n", match[1])
+				elems = append(elems, match[1])
 			}
+			update["elems"] = elems
 
-			// Define regular expression pattern to match "key:val"
+			// Extract key-value pairs for the update
+			notifString := u.String()
 			re = regexp.MustCompile(`val:\{(.*?)\}`)
 			result := re.FindStringSubmatch(notifString)
 			if len(result) > 1 {
 				keyVal := strings.Split(result[1], ":")
-				s += fmt.Sprintf("\t\tval {\n\t\t\t")
-				s += fmt.Sprintf("%s: %s\n\t\t}\n", keyVal[0], keyVal[1])
+				s += fmt.Sprintf("\t\tval {\n\t\t\t%s: %s\n\t\t}\n", keyVal[0], keyVal[1])
+				update["key"] = keyVal[0]
+				update["value"] = keyVal[1]
 			}
 
+			updates = append(updates, update)
 			s += fmt.Sprintf("\t}\n")
 		}
 		s += fmt.Sprintf("}\n")
+		notifData["updates"] = updates // Add update data to JSON output
+
+		outputData["notification"] = notifData // Add notification to JSON output
 	}
-	jctx.config.InternalJtimon.logger.Printf(s)
+
+	if *outJSON {
+		// Marshal the JSON data and print it
+		jsonOutput, err := json.MarshalIndent(outputData, "", "  ")
+		if err != nil {
+			jLog(jctx, "Error marshaling output to JSON")
+			return
+		}
+		jctx.config.InternalJtimon.logger.Printf("%s\n", jsonOutput)
+	} else {
+		// Print the plain text output
+		jctx.config.InternalJtimon.logger.Print(s)
+	}
+
 }
 
 func jLogInternalJtimonForPreGnmi(jctx *JCtx, ocdata *na_pb.OpenConfigData, outString string) {
