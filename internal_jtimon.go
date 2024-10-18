@@ -227,7 +227,7 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 				keyVal := strings.Split(result[1], ":")
 				s += fmt.Sprintf("\t\tval {\n\t\t\t%s: %s\n\t\t}\n", keyVal[0], keyVal[1])
 				update["key"] = keyVal[0]
-				update["value"] = keyVal[1]
+				update["value"] = strings.Trim(keyVal[1], "\"")
 			}
 
 			updates = append(updates, update)
@@ -255,7 +255,7 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 }
 
 func jLogInternalJtimonForPreGnmi(jctx *JCtx, ocdata *na_pb.OpenConfigData, outString string) {
-	if jctx.config.InternalJtimon.logger == nil || jctx.config.InternalJtimon.DataLog != "" {
+	if jctx.config.InternalJtimon.logger == nil || jctx.config.InternalJtimon.DataLog == "" {
 		return
 	}
 
