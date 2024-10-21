@@ -259,7 +259,7 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 		verboseSensorDetails = hdr.GetSensorName() + gGnmiVerboseSensorDetailsDelim +
 			hdr.GetStreamedPath() + gGnmiVerboseSensorDetailsDelim +
 			hdr.GetSubscribedPath() + gGnmiVerboseSensorDetailsDelim +
-			hdr.GetComponent() + gGnmiVerboseSensorDetailsDelim + strconv.FormatBool(hdr.GetEom())
+			hdr.GetComponent()
 
 		if hdr.GetSubscribedPath() != "" {
 			mName = hdr.GetSubscribedPath()
@@ -454,6 +454,7 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 					}
 				}
 				parseOutput.xpaths["eom"] = strconv.FormatBool(parseOutput.jHeader.hdrExt.GetEom())
+				parseOutput.xpaths["sequence_number"] = int64(parseOutput.jHeader.hdrExt.GetSequenceNumber())
 			}
 
 		}
