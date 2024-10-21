@@ -49,6 +49,7 @@ type xpathStats struct {
 	max_latency         uint64
 	min_latency         uint64
 	avg_latency         uint64
+	cur_latency         uint64
 	max_inter_pkt_delay uint64
 	min_inter_pkt_delay uint64
 	avg_inter_pkt_delay uint64
@@ -56,6 +57,10 @@ type xpathStats struct {
 }
 
 var xpath_stats = make(map[string]xpathStats)
+var periodic_stats_updated bool = false
+
+var xpath_initialsync_stats = make(map[string]xpathStats)
+var initialsync_stats_updated bool = false
 
 type statshandler struct {
 	jctx *JCtx
@@ -122,13 +127,13 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 								}
 							}
 							xstats := xpath_stats[v.Path]
-							xstats.total_bytes += uint64(s.(*stats.InPayload).Length)
+							xstats.total_bytes += uint64(s.(*stats.InPayload).WireLength)
 							xstats.total_packets++
-							if xstats.max_pkt_size < uint64(s.(*stats.InPayload).Length) {
-								xstats.max_pkt_size = uint64(s.(*stats.InPayload).Length)
+							if xstats.max_pkt_size < uint64(s.(*stats.InPayload).WireLength) {
+								xstats.max_pkt_size = uint64(s.(*stats.InPayload).WireLength)
 							}
-							if xstats.min_pkt_size == 0 || xstats.min_pkt_size > uint64(s.(*stats.InPayload).Length) {
-								xstats.min_pkt_size = uint64(s.(*stats.InPayload).Length)
+							if xstats.min_pkt_size == 0 || xstats.min_pkt_size > uint64(s.(*stats.InPayload).WireLength) {
+								xstats.min_pkt_size = uint64(s.(*stats.InPayload).WireLength)
 							}
 							xstats.avg_pkt_size = xstats.total_bytes / xstats.total_packets
 							if v.Eom != nil {
@@ -141,7 +146,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 			case *gnmi_pb.SubscribeResponse:
 				stat := h.getKPIStats(v)
 				if stat != nil && stat.Timestamp != 0 {
-					path := stat.SensorName + ":" + stat.Streamed_path + ":" + stat.Path + ":" + stat.Component
+					path := stat.SensorName + ":" + stat.Streamed_path + ":" + stat.Path + ":" + stat.Component + ":" + fmt.Sprintf("%d", stat.ComponentId) + ":" + fmt.Sprintf("%d", stat.SubComponentId)
 					if h.jctx.config.InternalJtimon.CsvLog != "" {
 						h.jctx.config.InternalJtimon.csvLogger.Printf(
 							fmt.Sprintf("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
@@ -155,25 +160,40 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					if _, exists := xpath_stats[path]; !exists {
 						xpath_stats[path] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0}
 					}
-					//fmt.Println("xpath_stats path: ", path)
-					xstats := xpath_stats[path]
-					xstats.total_bytes += uint64(s.(*stats.InPayload).Length)
-					xstats.total_packets++
-					if xstats.max_pkt_size < uint64(s.(*stats.InPayload).Length) {
-						xstats.max_pkt_size = uint64(s.(*stats.InPayload).Length)
+					if _, exists := xpath_initialsync_stats[path]; !exists {
+						xpath_initialsync_stats[path] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0}
 					}
-					if xstats.min_pkt_size == 0 || xstats.min_pkt_size > uint64(s.(*stats.InPayload).Length) {
-						xstats.min_pkt_size = uint64(s.(*stats.InPayload).Length)
+
+					//fmt.Print("sequence number: ", stat.SequenceNumber)
+					var xstats xpathStats
+					if stat.SequenceNumber >= (uint64(1<<21)-1) && stat.SequenceNumber <= (uint64(1<<22)-1) {
+						xstats = xpath_initialsync_stats[path]
+					} else {
+						xstats = xpath_stats[path]
+					}
+					//fmt.Println("xpath_stats path: ", path)
+					xstats.total_bytes += uint64(s.(*stats.InPayload).WireLength)
+					xstats.total_packets++
+					if xstats.max_pkt_size < uint64(s.(*stats.InPayload).WireLength) {
+						xstats.max_pkt_size = uint64(s.(*stats.InPayload).WireLength)
+					}
+					if xstats.min_pkt_size == 0 || xstats.min_pkt_size > uint64(s.(*stats.InPayload).WireLength) {
+						xstats.min_pkt_size = uint64(s.(*stats.InPayload).WireLength)
 					}
 					xstats.avg_pkt_size = xstats.total_bytes / xstats.total_packets
 					// if v.Eom != nil {
 					// 	log.Printf("Juniper header extension eom: %t\n", v.Eom)
 					// }
+					// fmt.Println("stat.re_stream_creation_timestamp: ", stat.re_stream_creation_timestamp)
+					// fmt.Println("stats.re_payload_get_timestamp: ", stat.re_payload_get_timestamp)
+					// fmt.Println("stats.Timestamp: ", stat.Timestamp)
+
 					if xstats.prev_timestamp == 0 {
 						xstats.prev_timestamp = stat.Timestamp
 					}
 					if stat.re_stream_creation_timestamp != 0 {
 						latency := stat.Timestamp - stat.re_stream_creation_timestamp
+						xstats.cur_latency = latency
 						if xstats.max_latency < latency {
 							xstats.max_latency = latency
 						}
@@ -193,8 +213,14 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					xstats.avg_inter_pkt_delay = (xstats.avg_inter_pkt_delay + inter_pkt_delay) / 2
 
 					xstats.prev_timestamp = stat.Timestamp
-					xpath_stats[path] = xstats
 
+					if stat.SequenceNumber >= (uint64(1<<21)-1) && stat.SequenceNumber <= (uint64(1<<22)-1) {
+						xpath_initialsync_stats[path] = xstats
+						initialsync_stats_updated = true
+					} else {
+						xpath_stats[path] = xstats
+						periodic_stats_updated = true
+					}
 				}
 			}
 		}
@@ -333,6 +359,7 @@ var previous_packets uint64
 var previous_time uint64
 
 var previous_xpath_stats = make(map[string]xpathStats)
+var previous_xpath_initialsync_stats = make(map[string]xpathStats)
 
 var RATE_SAMPLING_INTERVAL_SECS uint64 = 10
 
@@ -362,10 +389,16 @@ func printStatsRate(jctx *JCtx) {
 		// fmt.Println(s)
 		// previous_bytes = (jctx.stats.totalInPayloadWireLength + jctx.stats.totalInHeaderWireLength)
 		// previous_packets = jctx.stats.totalIn
-		for k, v := range xpath_stats {
-			// fmt.Println("xpath_stats: ", k, v)
-			pv, ok := previous_xpath_stats[k]
-			if ok {
+		if periodic_stats_updated {
+			for k, v := range xpath_stats {
+				// fmt.Println("xpath_stats: ", k, v)
+				if _, exists := previous_xpath_stats[k]; !exists {
+					previous_xpath_stats[k] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0}
+				}
+				pv := previous_xpath_stats[k]
+				if pv.total_packets == v.total_packets {
+					continue
+				}
 				// fmt.Println("previous xpath_stats: ", k, pv)
 				//path, bytes, bytes/sec
 				// fmt.Printf(
@@ -376,25 +409,68 @@ func printStatsRate(jctx *JCtx) {
 					"sensor_info": k,
 				}
 				fields := map[string]interface{}{
-					"total_bytes":     int64(v.total_bytes),
-					"total_packets":   int64(v.total_packets),
-					"bytes_per_sec":   int64((v.total_bytes - pv.total_bytes) / secs_diff),
-					"packets_per_sec": int64((v.total_packets - pv.total_packets) / secs_diff),
-					"max_pkt_size":    int64(v.max_pkt_size),
-					"min_pkt_size":    int64(v.min_pkt_size),
-					"avg_pkt_size":    int64(v.avg_pkt_size),
+					"total_bytes":         int64(v.total_bytes),
+					"total_packets":       int64(v.total_packets),
+					"bytes_per_sec":       int64((v.total_bytes - pv.total_bytes) / secs_diff),
+					"packets_per_sec":     int64((v.total_packets - pv.total_packets) / secs_diff),
+					"max_pkt_size":        int64(v.max_pkt_size),
+					"min_pkt_size":        int64(v.min_pkt_size),
+					"avg_pkt_size":        int64(v.avg_pkt_size),
 					"max_latency":         int64(v.max_latency),
 					"min_latency":         int64(v.min_latency),
 					"avg_latency":         int64(v.avg_latency),
+					"cur_latency":         int64(v.cur_latency),
 					"max_inter_pkt_delay": int64(v.max_inter_pkt_delay),
 					"min_inter_pkt_delay": int64(v.min_inter_pkt_delay),
 					"avg_inter_pkt_delay": int64(v.avg_inter_pkt_delay),
 				}
-				publishKPIToInflux(jctx, "kpi-measurements", tags, fields)
+				publishKPIToInflux(jctx, "kpi-periodic-measurements", tags, fields)
+				previous_xpath_stats[k] = v
 			}
-			previous_xpath_stats[k] = v
+			periodic_stats_updated = false
+		}
+
+		if initialsync_stats_updated {
+			for k, v := range xpath_initialsync_stats {
+				// fmt.Println("xpath_stats: ", k, v)
+				if _, exists := previous_xpath_initialsync_stats[k]; !exists {
+					previous_xpath_initialsync_stats[k] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0}
+				}
+				pv := previous_xpath_initialsync_stats[k]
+				if pv.total_packets == v.total_packets {
+					continue
+				}
+				// fmt.Println("previous xpath_stats: ", k, pv)
+				// //path, bytes, bytes/sec
+				// fmt.Printf(
+				// 	fmt.Sprintf("%s,%d,%d,%d,%d,%d\n", k, (v.total_bytes - pv.total_bytes), (v.total_bytes-pv.total_bytes)/secs_diff,
+				// 		v.max_pkt_size, v.min_pkt_size, v.avg_pkt_size))
+				tags := map[string]string{
+					"sensor_info": k,
+				}
+				fields := map[string]interface{}{
+					"total_bytes":         int64(v.total_bytes),
+					"total_packets":       int64(v.total_packets),
+					"bytes_per_sec":       int64((v.total_bytes - pv.total_bytes) / secs_diff),
+					"packets_per_sec":     int64((v.total_packets - pv.total_packets) / secs_diff),
+					"max_pkt_size":        int64(v.max_pkt_size),
+					"min_pkt_size":        int64(v.min_pkt_size),
+					"avg_pkt_size":        int64(v.avg_pkt_size),
+					"max_latency":         int64(v.max_latency),
+					"min_latency":         int64(v.min_latency),
+					"avg_latency":         int64(v.avg_latency),
+					"cur_latency":         int64(v.cur_latency),
+					"max_inter_pkt_delay": int64(v.max_inter_pkt_delay),
+					"min_inter_pkt_delay": int64(v.min_inter_pkt_delay),
+					"avg_inter_pkt_delay": int64(v.avg_inter_pkt_delay),
+				}
+				publishKPIToInflux(jctx, "kpi-initsync-measurements", tags, fields)
+				previous_xpath_initialsync_stats[k] = v
+			}
+			initialsync_stats_updated = false
 		}
 		previous_secs = current_secs
+
 		// write_file_delay++
 		// }
 		/*
