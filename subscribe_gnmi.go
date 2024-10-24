@@ -404,8 +404,8 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 		return errors.New("Measurement name extraction failed")
 	}
 
-	parseOutput.kvpairs["device"] = jctx.config.Host
-	parseOutput.kvpairs["sensor"] = parseOutput.sensorVal
+	//parseOutput.kvpairs["device"] = jctx.config.Host
+	//parseOutput.kvpairs["sensor"] = parseOutput.sensorVal
 	parseOutput.xpaths["vendor"] = "gnmi"
 	parseOutput.xpaths["initialsync"] = strconv.FormatBool(jctx.receivedSyncRsp)
 	parseOutput.kvpairs["streamedpath"] = parseOutput.stName
