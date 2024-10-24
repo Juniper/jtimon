@@ -6,6 +6,7 @@ import (
 	gnmi_juniper_header_ext "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header_ext"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,9 +39,11 @@ type kpiStats struct {
 	notif_timestamp              int64
 	re_stream_creation_timestamp uint64
 	re_payload_get_timestamp     uint64
+	Eom                          bool
 }
 
 type xpathStats struct {
+	sequence_number       uint64
 	total_bytes   uint64
 	total_packets uint64
 	max_pkt_size  uint64
@@ -54,13 +57,17 @@ type xpathStats struct {
 	min_inter_pkt_delay uint64
 	avg_inter_pkt_delay uint64
 	prev_timestamp      uint64
+	wrap_time             uint64
+	prev_wrap_timestamp   uint64
+	initial_drop_counter  uint64
+	periodic_drop_counter uint64
 }
 
 var xpath_stats = make(map[string]xpathStats)
 var periodic_stats_updated bool = false
 
-var xpath_initialsync_stats = make(map[string]xpathStats)
-var initialsync_stats_updated bool = false
+// var xpath_initialsync_stats = make(map[string]xpathStats)
+// var initialsync_stats_updated bool = false
 
 type statshandler struct {
 	jctx *JCtx
@@ -146,7 +153,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 			case *gnmi_pb.SubscribeResponse:
 				stat := h.getKPIStats(v)
 				if stat != nil && stat.Timestamp != 0 {
-					path := stat.SensorName + ":" + stat.Streamed_path + ":" + stat.Path + ":" + stat.Component + ":" + fmt.Sprintf("%d", stat.ComponentId) + ":" + fmt.Sprintf("%d", stat.SubComponentId)
+					path := stat.SensorName + ":" + strings.TrimSuffix(stat.Streamed_path, "/") + ":" + strings.TrimSuffix(stat.Path, "/") + ":" + stat.Component + ":" + fmt.Sprintf("%d", stat.ComponentId) + ":" + fmt.Sprintf("%d", stat.SubComponentId)
 					if h.jctx.config.InternalJtimon.CsvLog != "" {
 						h.jctx.config.InternalJtimon.csvLogger.Printf(
 							fmt.Sprintf("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
@@ -158,20 +165,37 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						)
 					}
 					if _, exists := xpath_stats[path]; !exists {
-						xpath_stats[path] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0}
-					}
-					if _, exists := xpath_initialsync_stats[path]; !exists {
-						xpath_initialsync_stats[path] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0}
+						xpath_stats[path] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0, wrap_time: 0, prev_wrap_timestamp: 0, initial_drop_counter: 0, periodic_drop_counter: 0}
 					}
 
-					//fmt.Print("sequence number: ", stat.SequenceNumber)
-					var xstats xpathStats
+					xstats := xpath_stats[path]
+
 					if stat.SequenceNumber >= (uint64(1<<21)-1) && stat.SequenceNumber <= (uint64(1<<22)-1) {
-						xstats = xpath_initialsync_stats[path]
-					} else {
-						xstats = xpath_stats[path]
+						// Initial sync mdoe
+						if xstats.sequence_number != 0 && stat.SequenceNumber != xstats.sequence_number+1 {
+							xstats.initial_drop_counter++
+						}
+					} else if stat.SequenceNumber >= (uint64(1<<20)-1) && stat.SequenceNumber <= (uint64(1<<21)-1) {
+						// ONCE mode
+						if xstats.sequence_number != 0 && stat.SequenceNumber != xstats.sequence_number+1 {
+							xstats.initial_drop_counter++
+						}
+					} else if stat.SequenceNumber >= 0 && stat.SequenceNumber <= (uint64(1<<20)-1) {
+						// Periodic mode
+						if xstats.sequence_number != 0 && stat.SequenceNumber != xstats.sequence_number+1 {
+							if xstats.sequence_number >= 0 && stat.SequenceNumber <= (uint64(1<<20)-1) {
+								xstats.periodic_drop_counter++
+							}
+						}
 					}
-					//fmt.Println("xpath_stats path: ", path)
+
+					xstats.sequence_number = stat.SequenceNumber
+					if stat.Eom {
+						if xstats.prev_wrap_timestamp != 0 && stat.Timestamp > xstats.prev_wrap_timestamp {
+							xstats.wrap_time = stat.Timestamp - xstats.prev_wrap_timestamp
+						}
+						xstats.prev_wrap_timestamp = stat.Timestamp
+					}
 					xstats.total_bytes += uint64(s.(*stats.InPayload).WireLength)
 					xstats.total_packets++
 					if xstats.max_pkt_size < uint64(s.(*stats.InPayload).WireLength) {
@@ -214,13 +238,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 
 					xstats.prev_timestamp = stat.Timestamp
 
-					if stat.SequenceNumber >= (uint64(1<<21)-1) && stat.SequenceNumber <= (uint64(1<<22)-1) {
-						xpath_initialsync_stats[path] = xstats
-						initialsync_stats_updated = true
-					} else {
-						xpath_stats[path] = xstats
-						periodic_stats_updated = true
-					}
+					xpath_stats[path] = xstats
 				}
 			}
 		}
@@ -265,6 +283,7 @@ func (h *statshandler) getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiS
 			stats.Component = hdr.Component
 			stats.Streamed_path = hdr.StreamedPath
 			stats.SensorName = hdr.SensorName
+			stats.Eom = hdr.Eom
 
 			if hdr.ExportTimestamp > 0 {
 				stats.Timestamp = uint64(hdr.ExportTimestamp)
@@ -359,7 +378,7 @@ var previous_packets uint64
 var previous_time uint64
 
 var previous_xpath_stats = make(map[string]xpathStats)
-var previous_xpath_initialsync_stats = make(map[string]xpathStats)
+// var previous_xpath_initialsync_stats = make(map[string]xpathStats)
 
 var RATE_SAMPLING_INTERVAL_SECS uint64 = 10
 
@@ -389,85 +408,46 @@ func printStatsRate(jctx *JCtx) {
 		// fmt.Println(s)
 		// previous_bytes = (jctx.stats.totalInPayloadWireLength + jctx.stats.totalInHeaderWireLength)
 		// previous_packets = jctx.stats.totalIn
-		if periodic_stats_updated {
-			for k, v := range xpath_stats {
-				// fmt.Println("xpath_stats: ", k, v)
-				if _, exists := previous_xpath_stats[k]; !exists {
-					previous_xpath_stats[k] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0}
-				}
-				pv := previous_xpath_stats[k]
-				if pv.total_packets == v.total_packets {
-					continue
-				}
-				// fmt.Println("previous xpath_stats: ", k, pv)
-				//path, bytes, bytes/sec
-				// fmt.Printf(
-				// 	fmt.Sprintf("%s,%d,%d,%d,%d,%d\n", k, (v.total_bytes - pv.total_bytes), (v.total_bytes-pv.total_bytes)/secs_diff,
-				// 		v.max_pkt_size, v.min_pkt_size, v.avg_pkt_size))
-
-				tags := map[string]string{
-					"sensor_info": k,
-				}
-				fields := map[string]interface{}{
-					"total_bytes":         int64(v.total_bytes),
-					"total_packets":       int64(v.total_packets),
-					"bytes_per_sec":       int64((v.total_bytes - pv.total_bytes) / secs_diff),
-					"packets_per_sec":     int64((v.total_packets - pv.total_packets) / secs_diff),
-					"max_pkt_size":        int64(v.max_pkt_size),
-					"min_pkt_size":        int64(v.min_pkt_size),
-					"avg_pkt_size":        int64(v.avg_pkt_size),
-					"max_latency":         int64(v.max_latency),
-					"min_latency":         int64(v.min_latency),
-					"avg_latency":         int64(v.avg_latency),
-					"cur_latency":         int64(v.cur_latency),
-					"max_inter_pkt_delay": int64(v.max_inter_pkt_delay),
-					"min_inter_pkt_delay": int64(v.min_inter_pkt_delay),
-					"avg_inter_pkt_delay": int64(v.avg_inter_pkt_delay),
-				}
-				publishKPIToInflux(jctx, "kpi-periodic-measurements", tags, fields)
-				previous_xpath_stats[k] = v
+		for k, v := range xpath_stats {
+			// fmt.Println("xpath_stats: ", k, v)
+			if _, exists := previous_xpath_stats[k]; !exists {
+				previous_xpath_stats[k] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0, wrap_time: 0, prev_wrap_timestamp: 0}
 			}
-			periodic_stats_updated = false
-		}
-
-		if initialsync_stats_updated {
-			for k, v := range xpath_initialsync_stats {
-				// fmt.Println("xpath_stats: ", k, v)
-				if _, exists := previous_xpath_initialsync_stats[k]; !exists {
-					previous_xpath_initialsync_stats[k] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0}
-				}
-				pv := previous_xpath_initialsync_stats[k]
-				if pv.total_packets == v.total_packets {
-					continue
-				}
-				// fmt.Println("previous xpath_stats: ", k, pv)
-				// //path, bytes, bytes/sec
-				// fmt.Printf(
-				// 	fmt.Sprintf("%s,%d,%d,%d,%d,%d\n", k, (v.total_bytes - pv.total_bytes), (v.total_bytes-pv.total_bytes)/secs_diff,
-				// 		v.max_pkt_size, v.min_pkt_size, v.avg_pkt_size))
-				tags := map[string]string{
-					"sensor_info": k,
-				}
-				fields := map[string]interface{}{
-					"total_bytes":         int64(v.total_bytes),
-					"total_packets":       int64(v.total_packets),
-					"bytes_per_sec":       int64((v.total_bytes - pv.total_bytes) / secs_diff),
-					"packets_per_sec":     int64((v.total_packets - pv.total_packets) / secs_diff),
-					"max_pkt_size":        int64(v.max_pkt_size),
-					"min_pkt_size":        int64(v.min_pkt_size),
-					"avg_pkt_size":        int64(v.avg_pkt_size),
-					"max_latency":         int64(v.max_latency),
-					"min_latency":         int64(v.min_latency),
-					"avg_latency":         int64(v.avg_latency),
-					"cur_latency":         int64(v.cur_latency),
-					"max_inter_pkt_delay": int64(v.max_inter_pkt_delay),
-					"min_inter_pkt_delay": int64(v.min_inter_pkt_delay),
-					"avg_inter_pkt_delay": int64(v.avg_inter_pkt_delay),
-				}
-				publishKPIToInflux(jctx, "kpi-initsync-measurements", tags, fields)
-				previous_xpath_initialsync_stats[k] = v
+			pv := previous_xpath_stats[k]
+			if pv.total_packets == v.total_packets {
+				continue
 			}
-			initialsync_stats_updated = false
+			// fmt.Println("previous xpath_stats: ", k, pv)
+			//path, bytes, bytes/sec
+			// fmt.Printf(
+			// 	fmt.Sprintf("%s,%d,%d,%d,%d,%d\n", k, (v.total_bytes - pv.total_bytes), (v.total_bytes-pv.total_bytes)/secs_diff,
+			// 		v.max_pkt_size, v.min_pkt_size, v.avg_pkt_size))
+
+			tags := map[string]string{
+				"sensor_info": k,
+			}
+			fields := map[string]interface{}{
+				"cur_sequence_number":   int64(v.sequence_number),
+				"total_bytes":           int64(v.total_bytes),
+				"total_packets":         int64(v.total_packets),
+				"bytes_per_sec":         int64((v.total_bytes - pv.total_bytes) / secs_diff),
+				"packets_per_sec":       int64((v.total_packets - pv.total_packets) / secs_diff),
+				"max_pkt_size":          int64(v.max_pkt_size),
+				"min_pkt_size":          int64(v.min_pkt_size),
+				"avg_pkt_size":          int64(v.avg_pkt_size),
+				"max_latency":           int64(v.max_latency),
+				"min_latency":           int64(v.min_latency),
+				"avg_latency":           int64(v.avg_latency),
+				"cur_latency":           int64(v.cur_latency),
+				"max_inter_pkt_delay":   int64(v.max_inter_pkt_delay),
+				"min_inter_pkt_delay":   int64(v.min_inter_pkt_delay),
+				"avg_inter_pkt_delay":   int64(v.avg_inter_pkt_delay),
+				"wrap_time":             int64(v.wrap_time),
+				"initial_drop_counter":  int64(v.initial_drop_counter),
+				"periodic_drop_counter": int64(v.periodic_drop_counter),
+			}
+			publishKPIToInflux(jctx, "kpi-measurements", tags, fields)
+			previous_xpath_stats[k] = v
 		}
 		previous_secs = current_secs
 
