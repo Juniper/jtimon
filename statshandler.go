@@ -58,7 +58,7 @@ type xpathStats struct {
 	avg_inter_pkt_delay uint64
 	prev_timestamp      uint64
 	wrap_time             uint64
-	prev_wrap_start_timestamp uint64
+	wrap_start_timestamp  uint64
 	initial_drop_counter  uint64
 	periodic_drop_counter uint64
 }
@@ -179,7 +179,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 							avg_inter_pkt_delay:       0,
 							prev_timestamp:            0,
 							wrap_time:                 0,
-							prev_wrap_start_timestamp: 0,
+							wrap_start_timestamp:  0,
 							initial_drop_counter:      0,
 							periodic_drop_counter:     0,
 						}
@@ -187,12 +187,12 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 
 					xstats := xpath_stats[path]
 
-					if stat.SequenceNumber >= (uint64(1<<21)-1) && stat.SequenceNumber <= (uint64(1<<22)-1) {
+					if stat.SequenceNumber >= uint64(1<<21) && stat.SequenceNumber <= (uint64(1<<22)-1) {
 						// Initial sync mdoe
 						if xstats.sequence_number != 0 && stat.SequenceNumber != xstats.sequence_number+1 {
 							xstats.initial_drop_counter++
 						}
-					} else if stat.SequenceNumber >= (uint64(1<<20)-1) && stat.SequenceNumber <= (uint64(1<<21)-1) {
+					} else if stat.SequenceNumber >= uint64(1<<20) && stat.SequenceNumber <= (uint64(1<<21)-1) {
 						// ONCE mode
 						if xstats.sequence_number != 0 && stat.SequenceNumber != xstats.sequence_number+1 {
 							xstats.initial_drop_counter++
@@ -200,7 +200,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					} else if stat.SequenceNumber >= 0 && stat.SequenceNumber <= (uint64(1<<20)-1) {
 						// Periodic mode
 						if xstats.sequence_number != 0 && stat.SequenceNumber != xstats.sequence_number+1 {
-							if xstats.sequence_number >= 0 && stat.SequenceNumber <= (uint64(1<<20)-1) {
+							if xstats.sequence_number <= (uint64(1<<20) - 1) {
 								xstats.periodic_drop_counter++
 							}
 						}
@@ -208,12 +208,12 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 
 					xstats.sequence_number = stat.SequenceNumber
 					if stat.Eom {
-						if xstats.prev_wrap_start_timestamp != 0 && stat.Timestamp > xstats.prev_wrap_start_timestamp {
-							xstats.wrap_time = stat.Timestamp - xstats.prev_wrap_start_timestamp
+						if xstats.wrap_start_timestamp != 0 && stat.Timestamp > xstats.wrap_start_timestamp {
+							xstats.wrap_time = stat.Timestamp - xstats.wrap_start_timestamp
 						}
-						xstats.prev_wrap_start_timestamp = 0
-					} else if xstats.prev_wrap_start_timestamp == 0 {
-						xstats.prev_wrap_start_timestamp = stat.Timestamp
+						xstats.wrap_start_timestamp = 0
+					} else if xstats.wrap_start_timestamp == 0 {
+						xstats.wrap_start_timestamp = stat.Timestamp
 					}
 					xstats.total_bytes += uint64(s.(*stats.InPayload).WireLength)
 					xstats.total_packets++
@@ -444,7 +444,7 @@ func printStatsRate(jctx *JCtx) {
 					avg_inter_pkt_delay:       0,
 					prev_timestamp:            0,
 					wrap_time:                 0,
-					prev_wrap_start_timestamp: 0,
+					wrap_start_timestamp: 0,
 				}
 			}
 			pv := previous_xpath_stats[k]
