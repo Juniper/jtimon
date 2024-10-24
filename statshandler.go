@@ -58,7 +58,7 @@ type xpathStats struct {
 	avg_inter_pkt_delay uint64
 	prev_timestamp      uint64
 	wrap_time             uint64
-	prev_wrap_timestamp   uint64
+	prev_wrap_start_timestamp uint64
 	initial_drop_counter  uint64
 	periodic_drop_counter uint64
 }
@@ -165,7 +165,24 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						)
 					}
 					if _, exists := xpath_stats[path]; !exists {
-						xpath_stats[path] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0, wrap_time: 0, prev_wrap_timestamp: 0, initial_drop_counter: 0, periodic_drop_counter: 0}
+						xpath_stats[path] = xpathStats{
+							total_bytes:               0,
+							total_packets:             0,
+							max_pkt_size:              0,
+							min_pkt_size:              0,
+							avg_pkt_size:              0,
+							max_latency:               0,
+							min_latency:               0,
+							avg_latency:               0,
+							max_inter_pkt_delay:       0,
+							min_inter_pkt_delay:       0,
+							avg_inter_pkt_delay:       0,
+							prev_timestamp:            0,
+							wrap_time:                 0,
+							prev_wrap_start_timestamp: 0,
+							initial_drop_counter:      0,
+							periodic_drop_counter:     0,
+						}
 					}
 
 					xstats := xpath_stats[path]
@@ -191,10 +208,12 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 
 					xstats.sequence_number = stat.SequenceNumber
 					if stat.Eom {
-						if xstats.prev_wrap_timestamp != 0 && stat.Timestamp > xstats.prev_wrap_timestamp {
-							xstats.wrap_time = stat.Timestamp - xstats.prev_wrap_timestamp
+						if xstats.prev_wrap_start_timestamp != 0 && stat.Timestamp > xstats.prev_wrap_start_timestamp {
+							xstats.wrap_time = stat.Timestamp - xstats.prev_wrap_start_timestamp
 						}
-						xstats.prev_wrap_timestamp = stat.Timestamp
+						xstats.prev_wrap_start_timestamp = 0
+					} else if xstats.prev_wrap_start_timestamp == 0 {
+						xstats.prev_wrap_start_timestamp = stat.Timestamp
 					}
 					xstats.total_bytes += uint64(s.(*stats.InPayload).WireLength)
 					xstats.total_packets++
@@ -411,7 +430,22 @@ func printStatsRate(jctx *JCtx) {
 		for k, v := range xpath_stats {
 			// fmt.Println("xpath_stats: ", k, v)
 			if _, exists := previous_xpath_stats[k]; !exists {
-				previous_xpath_stats[k] = xpathStats{total_bytes: 0, total_packets: 0, max_pkt_size: 0, min_pkt_size: 0, avg_pkt_size: 0, max_latency: 0, min_latency: 0, avg_latency: 0, max_inter_pkt_delay: 0, min_inter_pkt_delay: 0, avg_inter_pkt_delay: 0, prev_timestamp: 0, wrap_time: 0, prev_wrap_timestamp: 0}
+				previous_xpath_stats[k] = xpathStats{
+					total_bytes:               0,
+					total_packets:             0,
+					max_pkt_size:              0,
+					min_pkt_size:              0,
+					avg_pkt_size:              0,
+					max_latency:               0,
+					min_latency:               0,
+					avg_latency:               0,
+					max_inter_pkt_delay:       0,
+					min_inter_pkt_delay:       0,
+					avg_inter_pkt_delay:       0,
+					prev_timestamp:            0,
+					wrap_time:                 0,
+					prev_wrap_start_timestamp: 0,
+				}
 			}
 			pv := previous_xpath_stats[k]
 			if pv.total_packets == v.total_packets {
