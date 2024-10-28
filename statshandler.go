@@ -57,6 +57,10 @@ type xpathStats struct {
 	min_inter_pkt_delay uint64
 	avg_inter_pkt_delay uint64
 	prev_timestamp      uint64
+	packets_per_wrap      uint64
+	cur_packets_per_wrap  uint64
+	bytes_per_wrap        uint64
+	cur_bytes_per_wrap    uint64
 	wrap_time             uint64
 	wrap_start_timestamp  uint64
 	initial_drop_counter  uint64
@@ -178,7 +182,11 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 							min_inter_pkt_delay:       0,
 							avg_inter_pkt_delay:       0,
 							prev_timestamp:            0,
-							wrap_time:                 0,
+							packets_per_wrap:      0,
+							cur_packets_per_wrap:  0,
+							bytes_per_wrap:        0,
+							cur_bytes_per_wrap:    0,
+							wrap_time:             0,
 							wrap_start_timestamp:  0,
 							initial_drop_counter:      0,
 							periodic_drop_counter:     0,
@@ -207,13 +215,26 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					}
 
 					xstats.sequence_number = stat.SequenceNumber
+					xstats.cur_packets_per_wrap += 1
+					xstats.cur_bytes_per_wrap += uint64(s.(*stats.InPayload).WireLength)
+
 					if stat.Eom {
-						if xstats.wrap_start_timestamp != 0 && stat.Timestamp > xstats.wrap_start_timestamp {
-							xstats.wrap_time = stat.Timestamp - xstats.wrap_start_timestamp
+						if xstats.wrap_start_timestamp != 0 {
+							xstats.wrap_time = uint64(time.Now().UnixMilli()) - xstats.wrap_start_timestamp
 						}
+						// fmt.Printf(
+						// 	"%s:, Wrap Time: %d, Packets per wrap time: %d\n",
+						// 	path,
+						// 	xstats.wrap_time,
+						// 	xstats.packets_per_wrap,
+						// )
 						xstats.wrap_start_timestamp = 0
+						xstats.packets_per_wrap = xstats.cur_packets_per_wrap
+						xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
+						xstats.cur_packets_per_wrap = 0
+						xstats.cur_bytes_per_wrap = 0
 					} else if xstats.wrap_start_timestamp == 0 {
-						xstats.wrap_start_timestamp = stat.Timestamp
+						xstats.wrap_start_timestamp = uint64(time.Now().UnixMilli())
 					}
 					xstats.total_bytes += uint64(s.(*stats.InPayload).WireLength)
 					xstats.total_packets++
@@ -234,8 +255,11 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					if xstats.prev_timestamp == 0 {
 						xstats.prev_timestamp = stat.Timestamp
 					}
-					if stat.re_stream_creation_timestamp != 0 {
-						latency := stat.Timestamp - stat.re_stream_creation_timestamp
+					if stat.re_payload_get_timestamp != 0 {
+						latency := uint64(0)
+						if stat.Timestamp > stat.re_payload_get_timestamp {
+							latency = stat.Timestamp - stat.re_payload_get_timestamp
+						}
 						xstats.cur_latency = latency
 						if xstats.max_latency < latency {
 							xstats.max_latency = latency
@@ -477,6 +501,8 @@ func printStatsRate(jctx *JCtx) {
 				"min_inter_pkt_delay":   int64(v.min_inter_pkt_delay),
 				"avg_inter_pkt_delay":   int64(v.avg_inter_pkt_delay),
 				"wrap_time":             int64(v.wrap_time),
+				"packets_per_wrap":      int64(v.packets_per_wrap),
+				"bytes_per_wrap":        int64(v.bytes_per_wrap),
 				"initial_drop_counter":  int64(v.initial_drop_counter),
 				"periodic_drop_counter": int64(v.periodic_drop_counter),
 			}
