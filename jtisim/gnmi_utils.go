@@ -2,19 +2,21 @@ package jtisim
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	google_protobuf "github.com/golang/protobuf/ptypes/any"
 	gnmi "github.com/Juniper/jtimon/gnmi/gnmi"
 	gnmi_ext1 "github.com/Juniper/jtimon/gnmi/gnmi_ext"
 	gnmi_juniper_header "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header"
 	gnmi_juniper_header_ext "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header_ext"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
 const (
@@ -300,7 +302,16 @@ func gnmiParseValue(gnmiValue *gnmi.TypedValue, ts bool) (interface{}, error) {
 	case *gnmi.TypedValue_BoolVal:
 		value = gnmiValue.GetBoolVal()
 	case *gnmi.TypedValue_BytesVal:
-		value = gnmiValue.GetBytesVal()
+		byteVal := gnmiValue.GetBytesVal()
+		if len(byteVal) == 4 {
+			var double_val float32
+			if err := binary.Read(bytes.NewReader(byteVal), binary.LittleEndian, &double_val); err != nil {
+				value = hex.EncodeToString(byteVal)
+			}
+			value = fmt.Sprintf("%0.2f", double_val)
+		} else {
+			value = hex.EncodeToString(byteVal)
+		}
 	case *gnmi.TypedValue_AsciiVal:
 		value = gnmiValue.GetAsciiVal()
 	case *gnmi.TypedValue_AnyVal:
