@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	gnmi_ext1 "github.com/Juniper/jtimon/gnmi/gnmi_ext"
-	gnmi_juniper_header_ext "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header_ext"
 	"log"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	gnmi_ext1 "github.com/Juniper/jtimon/gnmi/gnmi_ext"
+	gnmi_juniper_header_ext "github.com/Juniper/jtimon/gnmi/gnmi_juniper_header_ext"
 
 	gnmi_pb "github.com/Juniper/jtimon/gnmi/gnmi"
 	na_pb "github.com/Juniper/jtimon/telemetry"
@@ -44,19 +45,19 @@ type kpiStats struct {
 
 type xpathStats struct {
 	sequence_number       uint64
-	total_bytes   uint64
-	total_packets uint64
-	max_pkt_size  uint64
-	min_pkt_size  uint64
-	avg_pkt_size  uint64
-	max_latency         uint64
-	min_latency         uint64
-	avg_latency         uint64
-	cur_latency         uint64
-	max_inter_pkt_delay uint64
-	min_inter_pkt_delay uint64
-	avg_inter_pkt_delay uint64
-	prev_timestamp      uint64
+	total_bytes           uint64
+	total_packets         uint64
+	max_pkt_size          uint64
+	min_pkt_size          uint64
+	avg_pkt_size          uint64
+	max_latency           uint64
+	min_latency           uint64
+	avg_latency           uint64
+	cur_latency           uint64
+	max_inter_pkt_delay   uint64
+	min_inter_pkt_delay   uint64
+	avg_inter_pkt_delay   uint64
+	prev_timestamp        uint64
 	packets_per_wrap      uint64
 	cur_packets_per_wrap  uint64
 	bytes_per_wrap        uint64
@@ -65,6 +66,7 @@ type xpathStats struct {
 	wrap_start_timestamp  uint64
 	initial_drop_counter  uint64
 	periodic_drop_counter uint64
+	wrap_counter          uint64
 }
 
 var xpath_stats = make(map[string]xpathStats)
@@ -170,26 +172,27 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					}
 					if _, exists := xpath_stats[path]; !exists {
 						xpath_stats[path] = xpathStats{
-							total_bytes:               0,
-							total_packets:             0,
-							max_pkt_size:              0,
-							min_pkt_size:              0,
-							avg_pkt_size:              0,
-							max_latency:               0,
-							min_latency:               0,
-							avg_latency:               0,
-							max_inter_pkt_delay:       0,
-							min_inter_pkt_delay:       0,
-							avg_inter_pkt_delay:       0,
-							prev_timestamp:            0,
+							total_bytes:           0,
+							total_packets:         0,
+							max_pkt_size:          0,
+							min_pkt_size:          0,
+							avg_pkt_size:          0,
+							max_latency:           0,
+							min_latency:           0,
+							avg_latency:           0,
+							max_inter_pkt_delay:   0,
+							min_inter_pkt_delay:   0,
+							avg_inter_pkt_delay:   0,
+							prev_timestamp:        0,
 							packets_per_wrap:      0,
 							cur_packets_per_wrap:  0,
 							bytes_per_wrap:        0,
 							cur_bytes_per_wrap:    0,
 							wrap_time:             0,
 							wrap_start_timestamp:  0,
-							initial_drop_counter:      0,
-							periodic_drop_counter:     0,
+							initial_drop_counter:  0,
+							periodic_drop_counter: 0,
+							wrap_counter:          0,
 						}
 					}
 
@@ -233,6 +236,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
 						xstats.cur_packets_per_wrap = 0
 						xstats.cur_bytes_per_wrap = 0
+						xstats.wrap_counter++
 					} else if xstats.wrap_start_timestamp == 0 {
 						xstats.wrap_start_timestamp = uint64(time.Now().UnixMilli())
 					}
@@ -421,6 +425,7 @@ var previous_packets uint64
 var previous_time uint64
 
 var previous_xpath_stats = make(map[string]xpathStats)
+
 // var previous_xpath_initialsync_stats = make(map[string]xpathStats)
 
 var RATE_SAMPLING_INTERVAL_SECS uint64 = 10
@@ -455,19 +460,19 @@ func printStatsRate(jctx *JCtx) {
 			// fmt.Println("xpath_stats: ", k, v)
 			if _, exists := previous_xpath_stats[k]; !exists {
 				previous_xpath_stats[k] = xpathStats{
-					total_bytes:               0,
-					total_packets:             0,
-					max_pkt_size:              0,
-					min_pkt_size:              0,
-					avg_pkt_size:              0,
-					max_latency:               0,
-					min_latency:               0,
-					avg_latency:               0,
-					max_inter_pkt_delay:       0,
-					min_inter_pkt_delay:       0,
-					avg_inter_pkt_delay:       0,
-					prev_timestamp:            0,
-					wrap_time:                 0,
+					total_bytes:          0,
+					total_packets:        0,
+					max_pkt_size:         0,
+					min_pkt_size:         0,
+					avg_pkt_size:         0,
+					max_latency:          0,
+					min_latency:          0,
+					avg_latency:          0,
+					max_inter_pkt_delay:  0,
+					min_inter_pkt_delay:  0,
+					avg_inter_pkt_delay:  0,
+					prev_timestamp:       0,
+					wrap_time:            0,
 					wrap_start_timestamp: 0,
 				}
 			}
@@ -505,6 +510,7 @@ func printStatsRate(jctx *JCtx) {
 				"bytes_per_wrap":        int64(v.bytes_per_wrap),
 				"initial_drop_counter":  int64(v.initial_drop_counter),
 				"periodic_drop_counter": int64(v.periodic_drop_counter),
+				"wrap_counter":          int64(v.wrap_counter),
 			}
 			publishKPIToInflux(jctx, "kpi-measurements", tags, fields)
 			previous_xpath_stats[k] = v
