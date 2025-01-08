@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -53,7 +55,12 @@ type xpathStats struct {
 	max_latency           uint64
 	min_latency           uint64
 	avg_latency           uint64
-	cur_latency           uint64
+	cur_inter_pkt_delay   uint64
+	wrap_inter_pkt_delay  string
+	size_pkts_wrap        []float64
+	latency_wrap          []float64
+	percentile_pkt_size   string
+	percentile_latency    string
 	max_inter_pkt_delay   uint64
 	min_inter_pkt_delay   uint64
 	avg_inter_pkt_delay   uint64
@@ -93,6 +100,27 @@ func (h *statshandler) HandleConn(ctx context.Context, s stats.ConnStats) {
 	case *stats.ConnEnd:
 	default:
 	}
+}
+
+func percentile(data []float64, percentile float64) float64 {
+	sort.Float64s(data)
+	index := (percentile / 100) * float64(len(data))
+
+	// Handle edge cases
+	if len(data) == 0 {
+		return 0
+	}
+	if index < 1 {
+		return data[0]
+	} else if index >= float64(len(data)) {
+		return data[len(data)-1]
+	}
+
+	// Interpolate between values
+	lower := int(math.Floor(index))
+	upper := int(math.Ceil(index))
+	weight := index - float64(lower)
+	return data[lower-1]*(1-weight) + data[upper-1]*weight
 }
 
 func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
@@ -180,6 +208,12 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 							max_latency:           0,
 							min_latency:           0,
 							avg_latency:           0,
+							cur_inter_pkt_delay:   0,
+							wrap_inter_pkt_delay:  "",
+							percentile_pkt_size:   "",
+							size_pkts_wrap:        []float64{},
+							latency_wrap:          []float64{},
+							percentile_latency:    "",
 							max_inter_pkt_delay:   0,
 							min_inter_pkt_delay:   0,
 							avg_inter_pkt_delay:   0,
@@ -231,11 +265,31 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						// 	xstats.wrap_time,
 						// 	xstats.packets_per_wrap,
 						// )
+						xstats.percentile_pkt_size = ""
+						for i := 10; i <= 90; i += 10 {
+							percentileValue := percentile(xstats.size_pkts_wrap, float64(i))
+							xstats.percentile_pkt_size += fmt.Sprintf("%d:%f,", i, percentileValue)
+						}
+						xstats.percentile_pkt_size += fmt.Sprintf("95:%f,99:%f", percentile(xstats.size_pkts_wrap, 95), percentile(xstats.size_pkts_wrap, 99))
+						xstats.size_pkts_wrap = []float64{}
+						xstats.percentile_latency = ""
+						for i := 50; i <= 80; i += 10 {
+							percentileValue := percentile(xstats.latency_wrap, float64(i))
+							xstats.percentile_latency += fmt.Sprintf("%d:%f,", i, percentileValue)
+						}
+						xstats.percentile_latency += fmt.Sprintf("85:%f,90:%f,95:%f", percentile(xstats.latency_wrap, 85), percentile(xstats.latency_wrap, 90), percentile(xstats.latency_wrap, 95))
+						for i := 96; i <= 100; i++ {
+							percentileValue := percentile(xstats.latency_wrap, float64(i))
+							xstats.percentile_latency += fmt.Sprintf(",%d:%f", i, percentileValue)
+						}
+						xstats.latency_wrap = []float64{}
 						xstats.wrap_start_timestamp = 0
 						xstats.packets_per_wrap = xstats.cur_packets_per_wrap
 						xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
 						xstats.cur_packets_per_wrap = 0
 						xstats.cur_bytes_per_wrap = 0
+						xstats.wrap_inter_pkt_delay = ""
+
 						xstats.wrap_counter++
 					} else if xstats.wrap_start_timestamp == 0 {
 						xstats.wrap_start_timestamp = uint64(time.Now().UnixMilli())
@@ -264,7 +318,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						if stat.Timestamp > stat.re_payload_get_timestamp {
 							latency = stat.Timestamp - stat.re_payload_get_timestamp
 						}
-						xstats.cur_latency = latency
+						xstats.latency_wrap = append(xstats.latency_wrap, float64(latency))
 						if xstats.max_latency < latency {
 							xstats.max_latency = latency
 						}
@@ -274,7 +328,14 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						xstats.avg_latency = (xstats.avg_latency + latency) / 2
 					}
 
+					xstats.size_pkts_wrap = append(xstats.size_pkts_wrap, float64(s.(*stats.InPayload).WireLength))
 					inter_pkt_delay := stat.Timestamp - xstats.prev_timestamp
+					xstats.cur_inter_pkt_delay = inter_pkt_delay
+					if xstats.wrap_inter_pkt_delay == "" {
+						xstats.wrap_inter_pkt_delay = fmt.Sprintf("%d", inter_pkt_delay)
+					} else {
+						xstats.wrap_inter_pkt_delay = fmt.Sprintf("%s,%d", xstats.wrap_inter_pkt_delay, inter_pkt_delay)
+					}
 					if xstats.max_inter_pkt_delay < inter_pkt_delay {
 						xstats.max_inter_pkt_delay = inter_pkt_delay
 					}
@@ -501,7 +562,6 @@ func printStatsRate(jctx *JCtx) {
 				"max_latency":           int64(v.max_latency),
 				"min_latency":           int64(v.min_latency),
 				"avg_latency":           int64(v.avg_latency),
-				"cur_latency":           int64(v.cur_latency),
 				"max_inter_pkt_delay":   int64(v.max_inter_pkt_delay),
 				"min_inter_pkt_delay":   int64(v.min_inter_pkt_delay),
 				"avg_inter_pkt_delay":   int64(v.avg_inter_pkt_delay),
@@ -511,6 +571,9 @@ func printStatsRate(jctx *JCtx) {
 				"initial_drop_counter":  int64(v.initial_drop_counter),
 				"periodic_drop_counter": int64(v.periodic_drop_counter),
 				"wrap_counter":          int64(v.wrap_counter),
+				"wrap_inter_pkt_delay":  v.wrap_inter_pkt_delay,
+				"percentile_pkt_size":   v.percentile_pkt_size,
+				"percentile_latency":    v.percentile_latency,
 			}
 			publishKPIToInflux(jctx, "kpi-measurements", tags, fields)
 			previous_xpath_stats[k] = v
