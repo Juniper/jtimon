@@ -418,12 +418,13 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 		}
 	}
 
-	if *print || IsVerboseLogging(jctx) {
-		var (
-			jxpaths  map[string]interface{}
-			jGnmiHdr string
-		)
+	// if *print || IsVerboseLogging(jctx) {
+	var (
+		jxpaths  map[string]interface{}
+		jGnmiHdr string
+	)
 
+	if true {
 		if parseOutput.jXpaths != nil {
 			jxpaths = parseOutput.jXpaths.xPaths
 		}
@@ -458,7 +459,9 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 			}
 
 		}
+	}
 
+	if *print || IsVerboseLogging(jctx) {
 		jLog(jctx, fmt.Sprintf("prefix: %v, kvpairs: %v, xpathVal: %v, juniperXpathVal: %v, juniperhdr: %v, measurement: %v, rsp: %v\n\n",
 			parseOutput.prefixPath, parseOutput.kvpairs, parseOutput.xpaths, jxpaths, jGnmiHdr, parseOutput.mName, rsp))
 	}

@@ -255,45 +255,45 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					xstats.cur_packets_per_wrap += 1
 					xstats.cur_bytes_per_wrap += uint64(s.(*stats.InPayload).WireLength)
 
-					if stat.Eom {
-						if xstats.wrap_start_timestamp != 0 {
-							xstats.wrap_time = uint64(time.Now().UnixMilli()) - xstats.wrap_start_timestamp
-						}
-						// fmt.Printf(
-						// 	"%s:, Wrap Time: %d, Packets per wrap time: %d\n",
-						// 	path,
-						// 	xstats.wrap_time,
-						// 	xstats.packets_per_wrap,
-						// )
-						xstats.percentile_pkt_size = ""
-						for i := 10; i <= 90; i += 10 {
-							percentileValue := percentile(xstats.size_pkts_wrap, float64(i))
-							xstats.percentile_pkt_size += fmt.Sprintf("%d:%f,", i, percentileValue)
-						}
-						xstats.percentile_pkt_size += fmt.Sprintf("95:%f,99:%f", percentile(xstats.size_pkts_wrap, 95), percentile(xstats.size_pkts_wrap, 99))
-						xstats.size_pkts_wrap = []float64{}
-						xstats.percentile_latency = ""
-						for i := 50; i <= 80; i += 10 {
-							percentileValue := percentile(xstats.latency_wrap, float64(i))
-							xstats.percentile_latency += fmt.Sprintf("%d:%f,", i, percentileValue)
-						}
-						xstats.percentile_latency += fmt.Sprintf("85:%f,90:%f,95:%f", percentile(xstats.latency_wrap, 85), percentile(xstats.latency_wrap, 90), percentile(xstats.latency_wrap, 95))
-						for i := 96; i <= 100; i++ {
-							percentileValue := percentile(xstats.latency_wrap, float64(i))
-							xstats.percentile_latency += fmt.Sprintf(",%d:%f", i, percentileValue)
-						}
-						xstats.latency_wrap = []float64{}
-						xstats.wrap_start_timestamp = 0
-						xstats.packets_per_wrap = xstats.cur_packets_per_wrap
-						xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
-						xstats.cur_packets_per_wrap = 0
-						xstats.cur_bytes_per_wrap = 0
-						xstats.wrap_inter_pkt_delay = ""
+					// if stat.Eom {
+					// 	if xstats.wrap_start_timestamp != 0 {
+					// 		xstats.wrap_time = uint64(time.Now().UnixMilli()) - xstats.wrap_start_timestamp
+					// 	}
+					// 	// fmt.Printf(
+					// 	// 	"%s:, Wrap Time: %d, Packets per wrap time: %d\n",
+					// 	// 	path,
+					// 	// 	xstats.wrap_time,
+					// 	// 	xstats.packets_per_wrap,
+					// 	// )
+					// 	xstats.percentile_pkt_size = ""
+					// 	for i := 10; i <= 90; i += 10 {
+					// 		percentileValue := percentile(xstats.size_pkts_wrap, float64(i))
+					// 		xstats.percentile_pkt_size += fmt.Sprintf("%d:%f,", i, percentileValue)
+					// 	}
+					// 	xstats.percentile_pkt_size += fmt.Sprintf("95:%f,99:%f", percentile(xstats.size_pkts_wrap, 95), percentile(xstats.size_pkts_wrap, 99))
+					// 	xstats.size_pkts_wrap = []float64{}
+					// 	xstats.percentile_latency = ""
+					// 	for i := 50; i <= 80; i += 10 {
+					// 		percentileValue := percentile(xstats.latency_wrap, float64(i))
+					// 		xstats.percentile_latency += fmt.Sprintf("%d:%f,", i, percentileValue)
+					// 	}
+					// 	xstats.percentile_latency += fmt.Sprintf("85:%f,90:%f,95:%f", percentile(xstats.latency_wrap, 85), percentile(xstats.latency_wrap, 90), percentile(xstats.latency_wrap, 95))
+					// 	for i := 96; i <= 100; i++ {
+					// 		percentileValue := percentile(xstats.latency_wrap, float64(i))
+					// 		xstats.percentile_latency += fmt.Sprintf(",%d:%f", i, percentileValue)
+					// 	}
+					// 	xstats.latency_wrap = []float64{}
+					// 	xstats.wrap_start_timestamp = 0
+					// 	xstats.packets_per_wrap = xstats.cur_packets_per_wrap
+					// 	xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
+					// 	xstats.cur_packets_per_wrap = 0
+					// 	xstats.cur_bytes_per_wrap = 0
+					// 	xstats.wrap_inter_pkt_delay = ""
 
-						xstats.wrap_counter++
-					} else if xstats.wrap_start_timestamp == 0 {
-						xstats.wrap_start_timestamp = uint64(time.Now().UnixMilli())
-					}
+					// 	xstats.wrap_counter++
+					// } else if xstats.wrap_start_timestamp == 0 {
+					// 	xstats.wrap_start_timestamp = uint64(time.Now().UnixMilli())
+					// }
 					xstats.total_bytes += uint64(s.(*stats.InPayload).WireLength)
 					xstats.total_packets++
 					if xstats.max_pkt_size < uint64(s.(*stats.InPayload).WireLength) {
@@ -344,6 +344,45 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					}
 					xstats.avg_inter_pkt_delay = (xstats.avg_inter_pkt_delay + inter_pkt_delay) / 2
 
+					if stat.Eom {
+						if xstats.wrap_start_timestamp != 0 {
+							xstats.wrap_time = uint64(time.Now().UnixMilli()) - xstats.wrap_start_timestamp
+						}
+						// fmt.Printf(
+						// 	"%s:, Wrap Time: %d, Packets per wrap time: %d\n",
+						// 	path,
+						// 	xstats.wrap_time,
+						// 	xstats.packets_per_wrap,
+						// )
+						xstats.percentile_pkt_size = ""
+						for i := 10; i <= 90; i += 10 {
+							percentileValue := percentile(xstats.size_pkts_wrap, float64(i))
+							xstats.percentile_pkt_size += fmt.Sprintf("%d:%f,", i, percentileValue)
+						}
+						xstats.percentile_pkt_size += fmt.Sprintf("95:%f,99:%f", percentile(xstats.size_pkts_wrap, 95), percentile(xstats.size_pkts_wrap, 99))
+						xstats.size_pkts_wrap = []float64{}
+						xstats.percentile_latency = ""
+						for i := 50; i <= 80; i += 10 {
+							percentileValue := percentile(xstats.latency_wrap, float64(i))
+							xstats.percentile_latency += fmt.Sprintf("%d:%f,", i, percentileValue)
+						}
+						xstats.percentile_latency += fmt.Sprintf("85:%f,90:%f,95:%f", percentile(xstats.latency_wrap, 85), percentile(xstats.latency_wrap, 90), percentile(xstats.latency_wrap, 95))
+						for i := 96; i <= 100; i++ {
+							percentileValue := percentile(xstats.latency_wrap, float64(i))
+							xstats.percentile_latency += fmt.Sprintf(",%d:%f", i, percentileValue)
+						}
+						xstats.latency_wrap = []float64{}
+						xstats.wrap_start_timestamp = 0
+						xstats.packets_per_wrap = xstats.cur_packets_per_wrap
+						xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
+						xstats.cur_packets_per_wrap = 0
+						xstats.cur_bytes_per_wrap = 0
+						xstats.wrap_inter_pkt_delay = ""
+
+						xstats.wrap_counter++
+					} else if xstats.wrap_start_timestamp == 0 {
+						xstats.wrap_start_timestamp = uint64(time.Now().UnixMilli())
+					}
 					xstats.prev_timestamp = stat.Timestamp
 
 					xpath_stats[path] = xstats
