@@ -221,10 +221,10 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 
 			// Extract key-value pairs for the update
 			notifString := u.String()
-			re = regexp.MustCompile(`val:\{(.*?)\}`)
+			re = regexp.MustCompile(`val:\{(.*)\}`)
 			result := re.FindStringSubmatch(notifString)
 			if len(result) > 1 {
-				keyVal := strings.Split(result[1], ":")
+				keyVal := strings.SplitN(result[1], ":", 2)
 				s += fmt.Sprintf("\t\tval {\n\t\t\t%s: %s\n\t\t}\n", keyVal[0], keyVal[1])
 				update["key"] = keyVal[0]
 				update["value"] = strings.Trim(keyVal[1], "\"")
