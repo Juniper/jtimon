@@ -57,6 +57,7 @@ type xpathStats struct {
 	avg_latency           uint64
 	cur_inter_pkt_delay   uint64
 	wrap_inter_pkt_delay  string
+	cur_wrap_inter_pkt_delay  string
 	size_pkts_wrap        []float64
 	latency_wrap          []float64
 	percentile_pkt_size   string
@@ -210,6 +211,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 							avg_latency:           0,
 							cur_inter_pkt_delay:   0,
 							wrap_inter_pkt_delay:  "",
+							cur_wrap_inter_pkt_delay: "",
 							percentile_pkt_size:   "",
 							size_pkts_wrap:        []float64{},
 							latency_wrap:          []float64{},
@@ -264,12 +266,6 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						xstats.min_pkt_size = uint64(s.(*stats.InPayload).WireLength)
 					}
 					xstats.avg_pkt_size = xstats.total_bytes / xstats.total_packets
-					// if v.Eom != nil {
-					// 	log.Printf("Juniper header extension eom: %t\n", v.Eom)
-					// }
-					// fmt.Println("stat.re_stream_creation_timestamp: ", stat.re_stream_creation_timestamp)
-					// fmt.Println("stats.re_payload_get_timestamp: ", stat.re_payload_get_timestamp)
-					// fmt.Println("stats.Timestamp: ", stat.Timestamp)
 
 					if xstats.prev_timestamp == 0 {
 						xstats.prev_timestamp = stat.Timestamp
@@ -309,12 +305,6 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						if xstats.wrap_start_timestamp != 0 {
 							xstats.wrap_time = uint64(time.Now().UnixMilli()) - xstats.wrap_start_timestamp
 						}
-						// fmt.Printf(
-						// 	"%s:, Wrap Time: %d, Packets per wrap time: %d\n",
-						// 	path,
-						// 	xstats.wrap_time,
-						// 	xstats.packets_per_wrap,
-						// )
 						xstats.percentile_pkt_size = ""
 						for i := 10; i <= 90; i += 10 {
 							percentileValue := percentile(xstats.size_pkts_wrap, float64(i))
@@ -338,6 +328,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
 						xstats.cur_packets_per_wrap = 0
 						xstats.cur_bytes_per_wrap = 0
+						xstats.cur_wrap_inter_pkt_delay = xstats.wrap_inter_pkt_delay
 						xstats.wrap_inter_pkt_delay = ""
 
 						xstats.wrap_counter++
@@ -571,7 +562,7 @@ func printStatsRate(jctx *JCtx) {
 				"initial_drop_counter":  int64(v.initial_drop_counter),
 				"periodic_drop_counter": int64(v.periodic_drop_counter),
 				"wrap_counter":          int64(v.wrap_counter),
-				"wrap_inter_pkt_delay":  v.wrap_inter_pkt_delay,
+				"wrap_inter_pkt_delay":  v.cur_wrap_inter_pkt_delay,
 				"percentile_pkt_size":   v.percentile_pkt_size,
 				"percentile_latency":    v.percentile_latency,
 			}

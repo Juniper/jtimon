@@ -654,6 +654,10 @@ func influxInit(jctx *JCtx) {
 		if err != nil {
 			log.Printf("influxInit failed to create database: %v\n", err)
 		}
+		_, err = queryIDB(*c, fmt.Sprintf("CREATE RETENTION POLICY \"1week\" ON \"%s\" DURATION 1w REPLICATION 1 DEFAULT",cfg.Influx.Dbname), cfg.Influx.Dbname)
+		if err != nil {
+			log.Printf("influxInit failed to create retention: %v\n", err)
+		}
 	}
 
 	jLog(jctx, "invoking getInfluxClient")
