@@ -32,61 +32,103 @@ const (
 func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 	updateStats(jctx, ocData, true)
 
+	// Struct to hold the data for JSON output
+	logData := make(map[string]interface{})
+
+	// String format logging
 	s := ""
 
 	if *print || (IsVerboseLogging(jctx) && !*print) || (isInternalJtimonLogging(jctx)) {
-		s += fmt.Sprintf("system_id: %s\n", ocData.SystemId)
-		s += fmt.Sprintf("component_id: %d\n", ocData.ComponentId)
-		s += fmt.Sprintf("sub_component_id: %d\n", ocData.SubComponentId)
-		s += fmt.Sprintf("path: %s\n", ocData.Path)
-		s += fmt.Sprintf("sequence_number: %d\n", ocData.SequenceNumber)
-		s += fmt.Sprintf("timestamp: %d\n", ocData.Timestamp)
-		s += fmt.Sprintf("sync_response: %v\n", ocData.SyncResponse)
-		if ocData.SyncResponse {
+		// Add data to both the string and map
+		systemId := ocData.SystemId
+		componentId := ocData.ComponentId
+		subComponentId := ocData.SubComponentId
+		path := ocData.Path
+		sequenceNumber := ocData.SequenceNumber
+		timestamp := ocData.Timestamp
+		syncResponse := ocData.SyncResponse
+
+		// String logging
+		s += fmt.Sprintf("system_id: %s\n", systemId)
+		s += fmt.Sprintf("component_id: %d\n", componentId)
+		s += fmt.Sprintf("sub_component_id: %d\n", subComponentId)
+		s += fmt.Sprintf("path: %s\n", path)
+		s += fmt.Sprintf("sequence_number: %d\n", sequenceNumber)
+		s += fmt.Sprintf("timestamp: %d\n", timestamp)
+		s += fmt.Sprintf("sync_response: %v\n", syncResponse)
+		if syncResponse {
 			s += "Received sync_response\n"
 		}
 
+		// Add data to map for JSON
+		logData["system_id"] = systemId
+		logData["component_id"] = componentId
+		logData["sub_component_id"] = subComponentId
+		logData["path"] = path
+		logData["sequence_number"] = sequenceNumber
+		logData["timestamp"] = timestamp
+		logData["sync_response"] = syncResponse
+
 		del := ocData.GetDelete()
+		deletePaths := []string{}
 		for _, d := range del {
-			s += fmt.Sprintf("Delete: %s\n", d.GetPath())
+			path := d.GetPath()
+			s += fmt.Sprintf("Delete: %s\n", path)
+			deletePaths = append(deletePaths, path)
 		}
+		logData["delete_paths"] = deletePaths
 	}
 
 	prefixSeen := false
+	kvData := []map[string]interface{}{}
+
 	for _, kv := range ocData.Kv {
 		updateStatsKV(jctx, true, 1)
+
+		kvItem := make(map[string]interface{})
+		kvItem["key"] = kv.Key
 
 		if *print || (IsVerboseLogging(jctx) && !*print) || (isInternalJtimonLogging(jctx)) {
 			s += fmt.Sprintf("  key: %s\n", kv.Key)
 			switch value := kv.Value.(type) {
 			case *na_pb.KeyValue_DoubleValue:
 				s += fmt.Sprintf("  double_value: %v\n", value.DoubleValue)
+				kvItem["double_value"] = value.DoubleValue
 			case *na_pb.KeyValue_IntValue:
 				s += fmt.Sprintf("  int_value: %d\n", value.IntValue)
+				kvItem["int_value"] = value.IntValue
 			case *na_pb.KeyValue_UintValue:
 				s += fmt.Sprintf("  uint_value: %d\n", value.UintValue)
+				kvItem["uint_value"] = value.UintValue
 			case *na_pb.KeyValue_SintValue:
 				s += fmt.Sprintf("  sint_value: %d\n", value.SintValue)
+				kvItem["sint_value"] = value.SintValue
 			case *na_pb.KeyValue_BoolValue:
 				s += fmt.Sprintf("  bool_value: %v\n", value.BoolValue)
+				kvItem["bool_value"] = value.BoolValue
 			case *na_pb.KeyValue_StrValue:
 				s += fmt.Sprintf("  str_value: %s\n", value.StrValue)
+				kvItem["str_value"] = value.StrValue
 			case *na_pb.KeyValue_BytesValue:
 				s += fmt.Sprintf("  bytes_value: %s\n", value.BytesValue)
+				kvItem["bytes_value"] = value.BytesValue
 			case *na_pb.KeyValue_LeaflistValue:
 				s += fmt.Sprintf("  leaf_list_value: %s\n", value.LeaflistValue)
 				e := kv.GetLeaflistValue().Element
+				elements := []string{}
 				for _, elem := range e {
-					switch elem.Value.(type) {
-					case *na_pb.TypedValue_LeaflistStrValue:
-						llStrValue := elem.GetLeaflistStrValue()
+					if llStrValue := elem.GetLeaflistStrValue(); llStrValue != "" {
 						s += fmt.Sprintf("  leaf_list_value(element): %s\n", llStrValue)
+						elements = append(elements, llStrValue)
 					}
 				}
-
+				kvItem["leaf_list_elements"] = elements
 			default:
 				s += fmt.Sprintf("  default: %v\n", value)
+				kvItem["default"] = value
 			}
+
+			kvData = append(kvData, kvItem)
 		}
 
 		if kv.Key == "__prefix__" {
@@ -100,11 +142,25 @@ func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {
 		}
 	}
 
-	if s != "" && isInternalJtimonLogging(jctx) {
-		jLogInternalJtimonForPreGnmi(jctx, nil, s)
-	}
+	logData["kv"] = kvData
+
 	if s != "" && (*print || (IsVerboseLogging(jctx) && !*print)) {
 		jLog(jctx, s)
+	}
+
+	if isInternalJtimonLogging(jctx) {
+		if *outJSON {
+			jsonOutput, err := json.MarshalIndent(logData, "", "  ")
+			if err != nil {
+				jLog(jctx, fmt.Sprintf("Error marshaling to JSON: %v", err))
+				return
+			}
+			jLogInternalJtimonForPreGnmi(jctx, nil, string(jsonOutput))
+		} else {
+			if s != "" {
+				jLogInternalJtimonForPreGnmi(jctx, nil, s)
+			}
+		}
 	}
 }
 
@@ -175,7 +231,7 @@ func subSendAndReceive(conn *grpc.ClientConn, jctx *JCtx,
 				}
 			}
 
-			if *print || *stateHandler || IsVerboseLogging(jctx) || isInternalJtimonLogging(jctx) {
+			if *print || *statsHandler || IsVerboseLogging(jctx) || isInternalJtimonLogging(jctx) {
 				handleOnePacket(ocData, jctx)
 			}
 
@@ -237,6 +293,10 @@ func subscribeJunos(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []Paths
 		subReqM.PathList = append(subReqM.PathList, &pathM)
 	}
 	additionalConfigM.NeedEos = jctx.config.EOS
+	// Override EOS if InternalJtimon is configured
+	if isInternalJtimonLogging(jctx) {
+		additionalConfigM.NeedEos = jctx.config.InternalJtimon.PreGnmiEOS
+	}
 	subReqM.AdditionalConfig = &additionalConfigM
 
 	return subSendAndReceive(conn, jctx, subReqM)
