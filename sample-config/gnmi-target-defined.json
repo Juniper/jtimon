@@ -1,0 +1,62 @@
+{
+    "host": "host",
+    "port": 32767,
+    "user": "user",
+    "password": "password",
+    "cid": "unique-cid",
+    "eos": true,
+    "grpc": {
+        "ws": 10485760
+    },
+    "influx": {
+        "server": "ip",
+        "port": 8086,
+        "dbname": "db-name",
+        "user": "user",
+        "password": "password",
+        "recreate": true,
+        "measurement": "measurement-name"
+    },
+    "vendor": {
+        "gnmi": {
+            "encoding": "protobuf"
+        }
+    },
+    "paths": [
+        {
+            "path": "/network-instances/",
+            "mode": "target-defined",
+            "freq": 30000
+        },
+        {
+            "path": "/system/",
+            "mode": "target-defined",
+            "freq": 30000
+        },
+        {
+            "path": "/interfaces/",
+            "mode": "target-defined",
+            "freq": 30000
+        },
+        {
+            "path": "/components/",
+            "mode": "target-defined",
+            "freq": 30000
+        },
+        {
+            "path": "/lacp/",
+            "mode": "target-defined",
+            "freq": 30000
+        },
+        {
+            "path": "/lldp/",
+            "mode": "target-defined",
+            "freq": 30000
+        },
+        {
+            "path": "/qos/",
+            "mode": "target-defined",
+            "freq": 30000
+        }
+    ]
+}

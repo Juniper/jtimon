@@ -99,12 +99,21 @@ func publishToPrometheus(jctx *JCtx, parseOutput *gnmiParseOutputT) {
 }
 
 /*
- * Publish parsed output to Influx. Make sure there are only inegers,
+ * Publish parsed output to Influx. Make sure there are only integers,
  * floats and strings. Influx Line Protocol doesn't support other types
  */
 func publishToInflux(jctx *JCtx, mName string, prefixPath string, kvpairs map[string]string, xpaths map[string]interface{}) error {
 	if !gGnmiUnitTestCoverage && jctx.influxCtx.influxClient == nil {
 		return nil
+	}
+
+	// Convert leaf-list values if present in xpaths for influxdb Point write
+	for key, value := range xpaths {
+		// Check if the value is a slice
+		if members, ok := value.([]string); ok {
+			// Join the slice elements into a single string separated by commas
+			xpaths[key] = strings.Join(members, ",")
+		}
 	}
 
 	pt, err := client.NewPoint(mName, kvpairs, xpaths, time.Now())
@@ -291,7 +300,8 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 		parseOutput = &tmpParseOp
 		err         error
 
-		hostname = jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
+		eosEnabled = false
+		hostname   = jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
 	)
 
 	// Update packet stats
@@ -316,7 +326,11 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 	updateStatsKV(jctx, true, parseOutput.inKvs)
 
 	// Ignore all packets till sync response is received.
-	if !jctx.config.EOS {
+	eosEnabled = jctx.config.EOS
+	if isInternalJtimonLogging(jctx) {
+		eosEnabled = jctx.config.InternalJtimon.GnmiEOS
+	}
+	if !eosEnabled {
 		if !jctx.receivedSyncRsp {
 			if parseOutput.jHeader != nil {
 				// For juniper packets, ignore only the packets which are numbered in initial sync sequence range
