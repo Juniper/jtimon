@@ -33,19 +33,20 @@ type batchWMData struct {
 
 // InfluxConfig is the config of InfluxDB
 type InfluxConfig struct {
-	Server               string `json:"server"`
-	Port                 int    `json:"port"`
-	Dbname               string `json:"dbname"`
-	User                 string `json:"user"`
-	Password             string `json:"password"`
-	Recreate             bool   `json:"recreate"`
-	Measurement          string `json:"measurement"`
-	BatchSize            int    `json:"batchsize"`
-	BatchFrequency       int    `json:"batchfrequency"`
-	HTTPTimeout          int    `json:"http-timeout"`
-	RetentionPolicy      string `json:"retention-policy"`
-	AccumulatorFrequency int    `json:"accumulator-frequency"`
-	WritePerMeasurement  bool   `json:"write-per-measurement"`
+	Server                  string `json:"server"`
+	Port                    int    `json:"port"`
+	Dbname                  string `json:"dbname"`
+	User                    string `json:"user"`
+	Password                string `json:"password"`
+	Recreate                bool   `json:"recreate"`
+	Measurement             string `json:"measurement"`
+	BatchSize               int    `json:"batchsize"`
+	BatchFrequency          int    `json:"batchfrequency"`
+	HTTPTimeout             int    `json:"http-timeout"`
+	RetentionPolicy         string `json:"retention-policy"`
+	RetentionPolicyDuration int    `json:"retention-policy-duration"`
+	AccumulatorFrequency    int    `json:"accumulator-frequency"`
+	WritePerMeasurement     bool   `json:"write-per-measurement"`
 }
 
 type metricIDB struct {
@@ -654,7 +655,13 @@ func influxInit(jctx *JCtx) {
 		if err != nil {
 			log.Printf("influxInit failed to create database: %v\n", err)
 		}
-		_, err = queryIDB(*c, fmt.Sprintf("CREATE RETENTION POLICY \"1week\" ON \"%s\" DURATION 1w REPLICATION 1 DEFAULT",cfg.Influx.Dbname), cfg.Influx.Dbname)
+
+		retDuration := "7d"
+		if cfg.Influx.RetentionPolicyDuration != 0 {
+			retDuration = fmt.Sprintf("%dd", cfg.Influx.RetentionPolicyDuration)
+		}
+
+		_, err = queryIDB(*c, fmt.Sprintf("CREATE RETENTION POLICY \"telemetrydefault\" ON \"%s\" DURATION %s REPLICATION 1 DEFAULT", cfg.Influx.Dbname, retDuration), cfg.Influx.Dbname)
 		if err != nil {
 			log.Printf("influxInit failed to create retention: %v\n", err)
 		}
