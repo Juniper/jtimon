@@ -282,6 +282,26 @@ func gnmiParseNotification(parseOrigin bool, rsp *gnmi.SubscribeResponse, parseO
 		parseOutput.inKvs += uint64(len(parseOutput.jXpaths.xPaths))
 	}
 
+	// Extract target and origin from prefix and add to kvpairs
+	prefix := notif.GetPrefix()
+	if prefix != nil {
+		target := prefix.GetTarget()
+		if target != "" {
+			if parseOutput.kvpairs == nil {
+				parseOutput.kvpairs = make(map[string]string)
+			}
+			parseOutput.kvpairs["target"] = target
+		}
+
+		origin := prefix.GetOrigin()
+		if origin != "" {
+			if parseOutput.kvpairs == nil {
+				parseOutput.kvpairs = make(map[string]string)
+			}
+			parseOutput.kvpairs["origin"] = origin
+		}
+	}
+
 	parseOutput, err = gnmiParseHeader(rsp, parseOutput)
 	if err != nil {
 		errMsg = fmt.Sprintf("gnmiParseHeader failed: %v", err)
@@ -503,6 +523,20 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 		jLog(jctx, fmt.Sprintf("gNMI host: %v, Invalid path: %v", hostname, err))
 		// To make worker absorb any further config changes
 		return SubRcConnRetry
+	}
+
+	// Set target in prefix if any path has a target configured
+	var target string
+	for _, path := range paths {
+		if path.Target != "" {
+			target = path.Target
+			break
+		}
+	}
+	if target != "" {
+		subs.Prefix = &gnmi.Path{
+			Target: target,
+		}
 	}
 
 	// 2. Subscribe
