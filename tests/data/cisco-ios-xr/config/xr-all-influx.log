@@ -57,8 +57,10 @@ Running config of JTIMON:
             "freq": 10000,
             "mode": "",
             "origin": "",
+            "target": "",
             "pre-gnmi": false,
-            "gnmi": false
+            "gnmi": false,
+            "gnmi_heartbeat_interval": 0
         }
     ],
     "log": {
