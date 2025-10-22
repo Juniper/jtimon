@@ -465,7 +465,8 @@ func xPathsTognmiSubscription(pathsCfg []PathsConfig, dialOutpathsCfg []*dialout
 			mode, freq := gnmiFreq(mode, p.Freq)
 			gp.Origin = p.Origin
 
-			subs = append(subs, &gnmi.Subscription{Path: gp, Mode: mode, SampleInterval: freq})
+			gnmiHb := gnmiHeartBeat(p.Gnmi_heartbeat_interval)
+			subs = append(subs, &gnmi.Subscription{Path: gp, Mode: mode, SampleInterval: freq, HeartbeatInterval: gnmiHb})
 		}
 	} else {
 		for _, p := range dialOutpathsCfg {
