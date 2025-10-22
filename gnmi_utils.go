@@ -539,3 +539,8 @@ func formJuniperTelemetryHdr(jXpaths *jnprXpathDetails, gnmiExt []*gnmi_ext1.Ext
 	return &juniperHdrDetails, true, nil
 
 }
+
+func gnmiHeartBeat(hb uint64) uint64 {
+	hb_val := (hb * gGnmiFreqUnits) / 10000
+	return hb_val
+}
