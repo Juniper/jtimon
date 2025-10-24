@@ -42,6 +42,7 @@ type Config struct {
 // GnmiConfig definition
 type GnmiConfig struct {
 	Encoding string
+	Mode     int16
 }
 
 // VendorConfig definition

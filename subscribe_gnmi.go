@@ -502,9 +502,7 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 	)
 
 	// 1. Form request
-
-	// Support only STREAM
-	subs.Mode = gnmi.SubscriptionList_STREAM
+	subs.Mode = gnmi.SubscriptionList_Mode(cfg.Vendor.Gnmi.Mode)
 
 	// PROTO encoding
 	if jctx.config.Vendor.Gnmi != nil {

@@ -85,36 +85,36 @@ New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
-  content-type: [application/grpc]
   jtisim: [yes]
+  content-type: [application/grpc]
 Receiving telemetry data from 127.0.0.1:50051
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Mon Oct 13 11:48:06 IST 2025 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:22 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Oct 13 11:48:08 IST 2025 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:24 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Oct 13 11:48:10 IST 2025 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:26 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Oct 13 11:48:12 IST 2025 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:28 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Oct 13 11:48:14 IST 2025 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:30 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Mon Oct 13 11:48:16 IST 2025 |               3960 |                 80 |             174838 |             175238 |
+| Fri Oct 24 13:08:32 IST 2025 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Mon Oct 13 11:48:18 IST 2025 |               3960 |                 80 |             174838 |             175238 |
+| Fri Oct 24 13:08:34 IST 2025 |               3960 |                 80 |             174838 |             175238 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 15.001798542s)
+Collector Stats for 127.0.0.1:50051 (Run time : 15.001638458s)
 80           : in-packets
 3960         : data points (KV pairs)
 25           : in-header wirelength (bytes)
