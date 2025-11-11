@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strconv"
 	"sort"
 	"strings"
 	"sync"
@@ -60,6 +61,7 @@ type xpathStats struct {
 	cur_wrap_inter_pkt_delay  string
 	size_pkts_wrap        []float64
 	latency_wrap          []float64
+	delay_pkts_wrap       []string
 	percentile_pkt_size   string
 	percentile_latency    string
 	max_inter_pkt_delay   uint64
@@ -75,6 +77,7 @@ type xpathStats struct {
 	initial_drop_counter  uint64
 	periodic_drop_counter uint64
 	wrap_counter          uint64
+	Eos                   bool
 }
 
 var xpath_stats = make(map[string]xpathStats)
@@ -125,17 +128,19 @@ func percentile(data []float64, percentile float64) float64 {
 }
 
 func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
-	h.jctx.stats.Lock()
-	defer h.jctx.stats.Unlock()
 
 	switch s.(type) {
 	case *stats.InHeader:
+		h.jctx.stats.Lock()
 		h.jctx.stats.totalInHeaderWireLength += uint64(s.(*stats.InHeader).WireLength)
+		h.jctx.stats.Unlock()
 	case *stats.OutHeader:
 	case *stats.OutPayload:
 	case *stats.InPayload:
+		h.jctx.stats.Lock()
 		h.jctx.stats.totalInPayloadLength += uint64(s.(*stats.InPayload).Length)
 		h.jctx.stats.totalInPayloadWireLength += uint64(s.(*stats.InPayload).WireLength)
+		h.jctx.stats.Unlock()
 		if *stateHandler {
 			switch v := (s.(*stats.InPayload).Payload).(type) {
 			case *na_pb.OpenConfigData:
@@ -214,6 +219,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 							cur_wrap_inter_pkt_delay: "",
 							percentile_pkt_size:   "",
 							size_pkts_wrap:        []float64{},
+							delay_pkts_wrap:       []string{},
 							latency_wrap:          []float64{},
 							percentile_latency:    "",
 							max_inter_pkt_delay:   0,
@@ -229,10 +235,12 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 							initial_drop_counter:  0,
 							periodic_drop_counter: 0,
 							wrap_counter:          0,
+							Eos:                  false,
 						}
 					}
 
 					xstats := xpath_stats[path]
+					xstats.Eos = h.jctx.receivedSyncRsp
 
 					if stat.SequenceNumber >= uint64(1<<21) && stat.SequenceNumber <= (uint64(1<<22)-1) {
 						// Initial sync mdoe
@@ -288,11 +296,8 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					xstats.size_pkts_wrap = append(xstats.size_pkts_wrap, float64(s.(*stats.InPayload).WireLength))
 					inter_pkt_delay := stat.Timestamp - xstats.prev_timestamp
 					xstats.cur_inter_pkt_delay = inter_pkt_delay
-					if xstats.wrap_inter_pkt_delay == "" {
-						xstats.wrap_inter_pkt_delay = fmt.Sprintf("%d", inter_pkt_delay)
-					} else {
-						xstats.wrap_inter_pkt_delay = fmt.Sprintf("%s,%d", xstats.wrap_inter_pkt_delay, inter_pkt_delay)
-					}
+					xstats.delay_pkts_wrap = append(xstats.delay_pkts_wrap, strconv.Itoa(int(inter_pkt_delay)))
+					xstats.wrap_inter_pkt_delay = "" 
 					if xstats.max_inter_pkt_delay < inter_pkt_delay {
 						xstats.max_inter_pkt_delay = inter_pkt_delay
 					}
@@ -328,7 +333,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
 						xstats.cur_packets_per_wrap = 0
 						xstats.cur_bytes_per_wrap = 0
-						xstats.cur_wrap_inter_pkt_delay = xstats.wrap_inter_pkt_delay
+						xstats.cur_wrap_inter_pkt_delay = strings.Join(xstats.delay_pkts_wrap[:],",")
 						xstats.wrap_inter_pkt_delay = ""
 
 						xstats.wrap_counter++
@@ -526,6 +531,7 @@ func printStatsRate(jctx *JCtx) {
 					prev_timestamp:       0,
 					wrap_time:            0,
 					wrap_start_timestamp: 0,
+					Eos:                 false,
 				}
 			}
 			pv := previous_xpath_stats[k]
@@ -565,6 +571,7 @@ func printStatsRate(jctx *JCtx) {
 				"wrap_inter_pkt_delay":  v.cur_wrap_inter_pkt_delay,
 				"percentile_pkt_size":   v.percentile_pkt_size,
 				"percentile_latency":    v.percentile_latency,
+				"Eos":                   v.Eos,
 			}
 			publishKPIToInflux(jctx, "kpi-measurements", tags, fields)
 			previous_xpath_stats[k] = v
