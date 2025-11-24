@@ -42,6 +42,7 @@ type Config struct {
 // GnmiConfig definition
 type GnmiConfig struct {
 	Encoding string
+	Mode     int16
 }
 
 // VendorConfig definition
@@ -95,12 +96,14 @@ type TLSConfig struct {
 
 // PathsConfig to specify subscription path, reporting-interval (freq), etc,.
 type PathsConfig struct {
-	Path    string `json:"path"`
-	Freq    uint64 `json:"freq"`
-	Mode    string `json:"mode"`
-	Origin  string `json:"origin"`
-	PreGnmi bool   `json:"pre-gnmi"`
-	Gnmi    bool   `json:"gnmi"`
+	Path                    string `json:"path"`
+	Freq                    uint64 `json:"freq"`
+	Mode                    string `json:"mode"`
+	Origin                  string `json:"origin"`
+	Target                  string `json:"target"`
+	PreGnmi                 bool   `json:"pre-gnmi"`
+	Gnmi                    bool   `json:"gnmi"`
+	Gnmi_heartbeat_interval uint64 `json:"gnmi_heartbeat_interval"`
 }
 
 // NewJTIMONConfigFilelist to return configfilelist object
@@ -323,6 +326,7 @@ func HandleConfigChange(jctx *JCtx, config Config, restart *bool) error {
 		jctx.config = config
 		logInit(jctx)
 		internalJtimonLogInit(jctx)
+		initInternalJtimon(jctx)
 		if restart != nil {
 			jLog(jctx, fmt.Sprintf("Restarting worker process to spawn new device connection for: %s", jctx.file))
 			*restart = true
@@ -348,6 +352,7 @@ func ConfigRead(jctx *JCtx, init bool, restart *bool) error {
 		jctx.config = config
 		logInit(jctx)
 		internalJtimonLogInit(jctx)
+		initInternalJtimon(jctx)
 		b, err := json.MarshalIndent(jctx.config, "", "    ")
 		if err != nil {
 			return fmt.Errorf("config parsing error (json marshal) for %s: %v", jctx.file, err)

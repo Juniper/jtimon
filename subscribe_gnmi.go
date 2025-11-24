@@ -99,12 +99,21 @@ func publishToPrometheus(jctx *JCtx, parseOutput *gnmiParseOutputT) {
 }
 
 /*
- * Publish parsed output to Influx. Make sure there are only inegers,
+ * Publish parsed output to Influx. Make sure there are only integers,
  * floats and strings. Influx Line Protocol doesn't support other types
  */
 func publishToInflux(jctx *JCtx, mName string, prefixPath string, kvpairs map[string]string, xpaths map[string]interface{}) error {
 	if !gGnmiUnitTestCoverage && jctx.influxCtx.influxClient == nil {
 		return nil
+	}
+
+	// Convert leaf-list values if present in xpaths for influxdb Point write
+	for key, value := range xpaths {
+		// Check if the value is a slice
+		if members, ok := value.([]string); ok {
+			// Join the slice elements into a single string separated by commas
+			xpaths[key] = strings.Join(members, ",")
+		}
 	}
 
 	pt, err := client.NewPoint(mName, kvpairs, xpaths, time.Now())
@@ -273,6 +282,26 @@ func gnmiParseNotification(parseOrigin bool, rsp *gnmi.SubscribeResponse, parseO
 		parseOutput.inKvs += uint64(len(parseOutput.jXpaths.xPaths))
 	}
 
+	// Extract target and origin from prefix and add to kvpairs
+	prefix := notif.GetPrefix()
+	if prefix != nil {
+		target := prefix.GetTarget()
+		if target != "" {
+			if parseOutput.kvpairs == nil {
+				parseOutput.kvpairs = make(map[string]string)
+			}
+			parseOutput.kvpairs["target"] = target
+		}
+
+		origin := prefix.GetOrigin()
+		if origin != "" {
+			if parseOutput.kvpairs == nil {
+				parseOutput.kvpairs = make(map[string]string)
+			}
+			parseOutput.kvpairs["origin"] = origin
+		}
+	}
+
 	parseOutput, err = gnmiParseHeader(rsp, parseOutput)
 	if err != nil {
 		errMsg = fmt.Sprintf("gnmiParseHeader failed: %v", err)
@@ -291,7 +320,8 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 		parseOutput = &tmpParseOp
 		err         error
 
-		hostname = jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
+		eosEnabled = false
+		hostname   = jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
 	)
 
 	// Update packet stats
@@ -316,7 +346,11 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 	updateStatsKV(jctx, true, parseOutput.inKvs)
 
 	// Ignore all packets till sync response is received.
-	if !jctx.config.EOS {
+	eosEnabled = jctx.config.EOS
+	if isInternalJtimonLogging(jctx) {
+		eosEnabled = jctx.config.InternalJtimon.GnmiEOS
+	}
+	if !eosEnabled {
 		if !jctx.receivedSyncRsp {
 			if parseOutput.jHeader != nil {
 				// For juniper packets, ignore only the packets which are numbered in initial sync sequence range
@@ -431,7 +465,8 @@ func xPathsTognmiSubscription(pathsCfg []PathsConfig, dialOutpathsCfg []*dialout
 			mode, freq := gnmiFreq(mode, p.Freq)
 			gp.Origin = p.Origin
 
-			subs = append(subs, &gnmi.Subscription{Path: gp, Mode: mode, SampleInterval: freq})
+			gnmiHb := gnmiHeartBeat(p.Gnmi_heartbeat_interval)
+			subs = append(subs, &gnmi.Subscription{Path: gp, Mode: mode, SampleInterval: freq, HeartbeatInterval: gnmiHb})
 		}
 	} else {
 		for _, p := range dialOutpathsCfg {
@@ -467,9 +502,7 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 	)
 
 	// 1. Form request
-
-	// Support only STREAM
-	subs.Mode = gnmi.SubscriptionList_STREAM
+	subs.Mode = gnmi.SubscriptionList_Mode(cfg.Vendor.Gnmi.Mode)
 
 	// PROTO encoding
 	if jctx.config.Vendor.Gnmi != nil {
@@ -489,6 +522,20 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 		jLog(jctx, fmt.Sprintf("gNMI host: %v, Invalid path: %v", hostname, err))
 		// To make worker absorb any further config changes
 		return SubRcConnRetry
+	}
+
+	// Set target in prefix if any path has a target configured
+	var target string
+	for _, path := range paths {
+		if path.Target != "" {
+			target = path.Target
+			break
+		}
+	}
+	if target != "" {
+		subs.Prefix = &gnmi.Path{
+			Target: target,
+		}
 	}
 
 	// 2. Subscribe

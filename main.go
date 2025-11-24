@@ -17,7 +17,7 @@ var (
 	outJSON         = flag.Bool("json", false, "Convert telemetry packet into JSON")
 	logMux          = flag.Bool("log-mux-stdout", false, "All logs to stdout")
 	maxRun          = flag.Int64("max-run", 0, "Max run time in seconds")
-	stateHandler    = flag.Bool("stats-handler", false, "Use GRPC statshandler")
+	statsHandler    = flag.Bool("stats-handler", false, "Use GRPC statshandler")
 	versionOnly     = flag.Bool("version", false, "Print version and build-time of the binary and exit")
 	compression     = flag.String("compression", "", "Enable HTTP/2 compression (gzip)")
 	prom            = flag.Bool("prometheus", false, "Stats for prometheus monitoring system")

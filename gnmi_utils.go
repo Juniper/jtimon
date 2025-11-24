@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -72,48 +74,47 @@ type gnmiParseOutputT struct {
 	inKvs      uint64
 }
 
-
 // parseKeyValuePairs takes an input string in the format `prefix[key = "value"]`
 // and returns the prefix as a string and the key-value pairs as a map.
 //
 // The input string can contain multiple key-value pairs in the same or different brackets.
 // The keys and values are trimmed of quotes and spaces.
 //
-// If the input string does not contain any brackets, the function returns the entire string 
+// If the input string does not contain any brackets, the function returns the entire string
 // as the prefix and an empty map.
 func parseKeyValuePairs(input string) (string, map[string]string) {
-    // Initialize a map to hold the key-value pairs
-    result := make(map[string]string)
+	// Initialize a map to hold the key-value pairs
+	result := make(map[string]string)
 
-    // Split the input string by the first occurrence of [" to get the prefix and the rest
-    parts := strings.SplitN(input, "[", 2)
-    prefix := parts[0]
+	// Split the input string by the first occurrence of [" to get the prefix and the rest
+	parts := strings.SplitN(input, "[", 2)
+	prefix := parts[0]
 
-    // Match anything inside square brackets
-    re := regexp.MustCompile(`\[(.*?)\]`)
-    matches := re.FindAllString(input, -1)
+	// Match anything inside square brackets
+	re := regexp.MustCompile(`\[(.*?)\]`)
+	matches := re.FindAllString(input, -1)
 
-    for _, match := range matches {
-        // Remove the square brackets
-        match = strings.Trim(match, "[]")
+	for _, match := range matches {
+		// Remove the square brackets
+		match = strings.Trim(match, "[]")
 
-        // Split by "and" to support multiple key-value pairs in the same brackets
-        pairs := strings.Split(match, "and")
+		// Split by "and" to support multiple key-value pairs in the same brackets
+		pairs := strings.Split(match, "and")
 
-        for _, pair := range pairs {
-            // Split by "=" to separate the key and value
-            kv := strings.Split(pair, "=")
+		for _, pair := range pairs {
+			// Split by "=" to separate the key and value
+			kv := strings.Split(pair, "=")
 
-            // Trim the quotes and spaces from the key and value
-            key := strings.Trim(kv[0], " \"")
-            value := strings.Trim(kv[1], " \"")
+			// Trim the quotes and spaces from the key and value
+			key := strings.Trim(kv[0], " \"")
+			value := strings.Trim(kv[1], " \"")
 
-            // Add the key-value pair to the result map
-            result[key] = value
-        }
-    }
+			// Add the key-value pair to the result map
+			result[key] = value
+		}
+	}
 
-    return prefix, result
+	return prefix, result
 }
 
 // Convert xpath to gNMI path
@@ -359,7 +360,16 @@ func gnmiParseValue(gnmiValue *gnmi.TypedValue, ts bool, enableUint bool) (inter
 	case *gnmi.TypedValue_BoolVal:
 		value = gnmiValue.GetBoolVal()
 	case *gnmi.TypedValue_BytesVal:
-		value = gnmiValue.GetBytesVal()
+		byteVal := gnmiValue.GetBytesVal()
+		if len(byteVal) == 4 {
+			var double_val float32
+			if err := binary.Read(bytes.NewReader(byteVal), binary.LittleEndian, &double_val); err != nil {
+				value = hex.EncodeToString(byteVal)
+			}
+			value = fmt.Sprintf("%0.2f", double_val)
+		} else {
+			value = hex.EncodeToString(byteVal)
+		}
 	case *gnmi.TypedValue_AsciiVal:
 		value = gnmiValue.GetAsciiVal()
 	case *gnmi.TypedValue_AnyVal:
@@ -528,4 +538,9 @@ func formJuniperTelemetryHdr(jXpaths *jnprXpathDetails, gnmiExt []*gnmi_ext1.Ext
 
 	return &juniperHdrDetails, true, nil
 
+}
+
+func gnmiHeartBeat(hb uint64) uint64 {
+	hb_val := (hb * gGnmiFreqUnits) / 10000
+	return hb_val
 }

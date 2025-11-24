@@ -84,12 +84,16 @@ func subscribePrePostGNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths [
 	// Launch goroutines for each subscription function
 	go func() {
 		gnmiPaths := getGnmiPaths(cfg)
-		gnmiResultCh <- subscribegNMI(conn, jctx, cfg, gnmiPaths)
+		if len(gnmiPaths) > 0 {
+			gnmiResultCh <- subscribegNMI(conn, jctx, cfg, gnmiPaths)
+		}
 	}()
 
 	go func() {
 		preGnmiPaths := getPreGnmiPaths(cfg)
-		junosResultCh <- subscribeJunos(conn, jctx, cfg, preGnmiPaths)
+		if len(preGnmiPaths) > 0 {
+			junosResultCh <- subscribeJunos(conn, jctx, cfg, preGnmiPaths)
+		}
 	}()
 
 	// Use select to wait for the first result to be available
