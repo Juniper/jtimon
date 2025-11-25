@@ -5,8 +5,8 @@ import (
 	"log"
 	"math"
 	"os"
-	"strconv"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -47,37 +47,37 @@ type kpiStats struct {
 }
 
 type xpathStats struct {
-	sequence_number       uint64
-	total_bytes           uint64
-	total_packets         uint64
-	max_pkt_size          uint64
-	min_pkt_size          uint64
-	avg_pkt_size          uint64
-	max_latency           uint64
-	min_latency           uint64
-	avg_latency           uint64
-	cur_inter_pkt_delay   uint64
-	wrap_inter_pkt_delay  string
-	cur_wrap_inter_pkt_delay  string
-	size_pkts_wrap        []float64
-	latency_wrap          []float64
-	delay_pkts_wrap       []string
-	percentile_pkt_size   string
-	percentile_latency    string
-	max_inter_pkt_delay   uint64
-	min_inter_pkt_delay   uint64
-	avg_inter_pkt_delay   uint64
-	prev_timestamp        uint64
-	packets_per_wrap      uint64
-	cur_packets_per_wrap  uint64
-	bytes_per_wrap        uint64
-	cur_bytes_per_wrap    uint64
-	wrap_time             uint64
-	wrap_start_timestamp  uint64
-	initial_drop_counter  uint64
-	periodic_drop_counter uint64
-	wrap_counter          uint64
-	Eos                   bool
+	sequence_number          uint64
+	total_bytes              uint64
+	total_packets            uint64
+	max_pkt_size             uint64
+	min_pkt_size             uint64
+	avg_pkt_size             uint64
+	max_latency              uint64
+	min_latency              uint64
+	avg_latency              uint64
+	cur_inter_pkt_delay      uint64
+	wrap_inter_pkt_delay     string
+	cur_wrap_inter_pkt_delay string
+	size_pkts_wrap           []float64
+	latency_wrap             []float64
+	delay_pkts_wrap          []string
+	percentile_pkt_size      string
+	percentile_latency       string
+	max_inter_pkt_delay      uint64
+	min_inter_pkt_delay      uint64
+	avg_inter_pkt_delay      uint64
+	prev_timestamp           uint64
+	packets_per_wrap         uint64
+	cur_packets_per_wrap     uint64
+	bytes_per_wrap           uint64
+	cur_bytes_per_wrap       uint64
+	wrap_time                uint64
+	wrap_start_timestamp     uint64
+	initial_drop_counter     uint64
+	periodic_drop_counter    uint64
+	wrap_counter             uint64
+	Eos                      bool
 }
 
 var xpath_stats = make(map[string]xpathStats)
@@ -206,36 +206,36 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					}
 					if _, exists := xpath_stats[path]; !exists {
 						xpath_stats[path] = xpathStats{
-							total_bytes:           0,
-							total_packets:         0,
-							max_pkt_size:          0,
-							min_pkt_size:          0,
-							avg_pkt_size:          0,
-							max_latency:           0,
-							min_latency:           0,
-							avg_latency:           0,
-							cur_inter_pkt_delay:   0,
-							wrap_inter_pkt_delay:  "",
+							total_bytes:              0,
+							total_packets:            0,
+							max_pkt_size:             0,
+							min_pkt_size:             0,
+							avg_pkt_size:             0,
+							max_latency:              0,
+							min_latency:              0,
+							avg_latency:              0,
+							cur_inter_pkt_delay:      0,
+							wrap_inter_pkt_delay:     "",
 							cur_wrap_inter_pkt_delay: "",
-							percentile_pkt_size:   "",
-							size_pkts_wrap:        []float64{},
-							delay_pkts_wrap:       []string{},
-							latency_wrap:          []float64{},
-							percentile_latency:    "",
-							max_inter_pkt_delay:   0,
-							min_inter_pkt_delay:   0,
-							avg_inter_pkt_delay:   0,
-							prev_timestamp:        0,
-							packets_per_wrap:      0,
-							cur_packets_per_wrap:  0,
-							bytes_per_wrap:        0,
-							cur_bytes_per_wrap:    0,
-							wrap_time:             0,
-							wrap_start_timestamp:  0,
-							initial_drop_counter:  0,
-							periodic_drop_counter: 0,
-							wrap_counter:          0,
-							Eos:                  false,
+							percentile_pkt_size:      "",
+							size_pkts_wrap:           []float64{},
+							delay_pkts_wrap:          []string{},
+							latency_wrap:             []float64{},
+							percentile_latency:       "",
+							max_inter_pkt_delay:      0,
+							min_inter_pkt_delay:      0,
+							avg_inter_pkt_delay:      0,
+							prev_timestamp:           0,
+							packets_per_wrap:         0,
+							cur_packets_per_wrap:     0,
+							bytes_per_wrap:           0,
+							cur_bytes_per_wrap:       0,
+							wrap_time:                0,
+							wrap_start_timestamp:     0,
+							initial_drop_counter:     0,
+							periodic_drop_counter:    0,
+							wrap_counter:             0,
+							Eos:                      false,
 						}
 					}
 
@@ -297,7 +297,7 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 					inter_pkt_delay := stat.Timestamp - xstats.prev_timestamp
 					xstats.cur_inter_pkt_delay = inter_pkt_delay
 					xstats.delay_pkts_wrap = append(xstats.delay_pkts_wrap, strconv.Itoa(int(inter_pkt_delay)))
-					xstats.wrap_inter_pkt_delay = "" 
+					xstats.wrap_inter_pkt_delay = ""
 					if xstats.max_inter_pkt_delay < inter_pkt_delay {
 						xstats.max_inter_pkt_delay = inter_pkt_delay
 					}
@@ -333,8 +333,9 @@ func (h *statshandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 						xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
 						xstats.cur_packets_per_wrap = 0
 						xstats.cur_bytes_per_wrap = 0
-						xstats.cur_wrap_inter_pkt_delay = strings.Join(xstats.delay_pkts_wrap[:],",")
+						xstats.cur_wrap_inter_pkt_delay = strings.Join(xstats.delay_pkts_wrap[:], ",")
 						xstats.wrap_inter_pkt_delay = ""
+						xstats.delay_pkts_wrap = []string{}
 
 						xstats.wrap_counter++
 					} else if xstats.wrap_start_timestamp == 0 {
@@ -531,7 +532,7 @@ func printStatsRate(jctx *JCtx) {
 					prev_timestamp:       0,
 					wrap_time:            0,
 					wrap_start_timestamp: 0,
-					Eos:                 false,
+					Eos:                  false,
 				}
 			}
 			pv := previous_xpath_stats[k]

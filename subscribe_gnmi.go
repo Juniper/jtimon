@@ -351,6 +351,13 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 	updateStats(jctx, nil, true)
 	if syncRsp := rsp.GetSyncResponse(); syncRsp {
 		jLog(jctx, fmt.Sprintf("gNMI host: %v, received sync response", hostname))
+		fmt.Printf("gNMI host: %v, received sync response\n", hostname)
+		file, err := os.Create("SYNCREC")
+		if err != nil {
+			jLog(jctx, fmt.Sprintf("Failed to create SYNCREC file: %v", err))
+		} else {
+			file.Close()
+		}
 		parseOutput.syncRsp = true
 		jctx.receivedSyncRsp = true
 		return nil
