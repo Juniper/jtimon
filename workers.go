@@ -637,6 +637,11 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 			statusch <- struct{}{}
 			errCh <- err
 			return
+		case SubRcOnceComplete:
+			jLog(jctx, fmt.Sprintf("ONCE subscription completed successfully for worker %s", jctx.file))
+			statusch <- struct{}{}
+			errCh <- err
+			return
 		}
 
 	}()
@@ -799,6 +804,10 @@ connect:
 		goto connect
 	case SubRcSighupNoRestart:
 		jLog(jctx, fmt.Sprintf("not reconnecting for worker %s", jctx.file))
+		statusch <- struct{}{}
+		return
+	case SubRcOnceComplete:
+		jLog(jctx, fmt.Sprintf("ONCE subscription completed successfully for worker %s", jctx.file))
 		statusch <- struct{}{}
 		return
 	}
