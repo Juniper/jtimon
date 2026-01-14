@@ -251,10 +251,10 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 			if len(result) > 1 {
 				keyVal := strings.SplitN(result[1], ":", 2)
 				fieldName := keyVal[0]
-				
+
 				// Convert full protobuf field names to shortened format for output
 				fieldNameMap := map[string]string{
-					"string_val":    "str_val",
+					"string_val":    "string_val",
 					"int_val":       "int_val",
 					"uint_val":      "uint_val",
 					"bool_val":      "bool_val",
@@ -269,11 +269,11 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 					"ascii_val":     "ascii_val",
 					"proto_bytes":   "proto_bytes",
 				}
-				
+
 				if shortName, ok := fieldNameMap[fieldName]; ok {
 					fieldName = shortName
 				}
-				
+
 				s += fmt.Sprintf("\t\tval {\n\t\t\t%s: %s\n\t\t}\n", fieldName, keyVal[1])
 				update["key"] = fieldName
 				update["value"] = strings.Trim(keyVal[1], "\"")
