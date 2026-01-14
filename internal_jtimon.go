@@ -186,8 +186,33 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 			prefixPath = getPath(prefixPath, prefix.GetElem())
 		}
 
-		s += fmt.Sprintf(
-			"Update {\n\ttimestamp: %d\n\tprefix: %v\n", notif.GetTimestamp(), prefixPath)
+		// Format prefix in structured protobuf style
+		s += fmt.Sprintf("Update {\n\ttimestamp: %d\n", notif.GetTimestamp())
+
+		if prefix != nil {
+			s += "\tprefix {\n"
+
+			// Add origin if present
+			if prefix.GetOrigin() != "" {
+				s += fmt.Sprintf("\t\torigin: %s\n", prefix.GetOrigin())
+			}
+
+			// Add path elements
+			for _, elem := range prefix.GetElem() {
+				s += fmt.Sprintf("\t\telem {\n\t\t\tname: %s\n", elem.GetName())
+
+				// Add keys if present
+				if len(elem.GetKey()) > 0 {
+					for k, v := range elem.GetKey() {
+						s += fmt.Sprintf("\t\t\tkey {\n\t\t\t\tkey: %s\n\t\t\t\tvalue: %s\n\t\t\t}\n", k, v)
+					}
+				}
+
+				s += "\t\t}\n"
+			}
+
+			s += "\t}\n"
+		}
 
 		// Create a map to hold notification data for JSON output
 		notifData := make(map[string]interface{})
@@ -206,7 +231,7 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 		// Parse updates (both for string and JSON)
 		var updates []map[string]interface{}
 		for _, u := range notif.Update {
-			s += fmt.Sprintf("Update {\n\tpath {\n")
+			s += "Update {\n\tpath {\n"
 
 			update := make(map[string]interface{})
 
@@ -225,15 +250,39 @@ func jLogInternalJtimonForGnmi(jctx *JCtx, parseOutput *gnmiParseOutputT, rsp *g
 			result := re.FindStringSubmatch(notifString)
 			if len(result) > 1 {
 				keyVal := strings.SplitN(result[1], ":", 2)
-				s += fmt.Sprintf("\t\tval {\n\t\t\t%s: %s\n\t\t}\n", keyVal[0], keyVal[1])
-				update["key"] = keyVal[0]
+				fieldName := keyVal[0]
+				
+				// Convert full protobuf field names to shortened format for output
+				fieldNameMap := map[string]string{
+					"string_val":    "str_val",
+					"int_val":       "int_val",
+					"uint_val":      "uint_val",
+					"bool_val":      "bool_val",
+					"bytes_val":     "bytes_val",
+					"float_val":     "float_val",
+					"double_val":    "double_val",
+					"decimal_val":   "decimal_val",
+					"leaflist_val":  "leaflist_val",
+					"any_val":       "any_val",
+					"json_val":      "json_val",
+					"json_ietf_val": "json_ietf_val",
+					"ascii_val":     "ascii_val",
+					"proto_bytes":   "proto_bytes",
+				}
+				
+				if shortName, ok := fieldNameMap[fieldName]; ok {
+					fieldName = shortName
+				}
+				
+				s += fmt.Sprintf("\t\tval {\n\t\t\t%s: %s\n\t\t}\n", fieldName, keyVal[1])
+				update["key"] = fieldName
 				update["value"] = strings.Trim(keyVal[1], "\"")
 			}
 
 			updates = append(updates, update)
-			s += fmt.Sprintf("\t}\n")
+			s += "\t}\n"
 		}
-		s += fmt.Sprintf("}\n")
+		s += "}\n"
 		notifData["updates"] = updates // Add update data to JSON output
 
 		outputData["notification"] = notifData // Add notification to JSON output
