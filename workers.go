@@ -601,7 +601,7 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 		jLog(jctx, fmt.Sprintf("Calling subscribe() ::: %s\n", jctx.file))
 		subscribeConfig := jctx.config
 		code := vendor.subscribe(conn, jctx, subscribeConfig, subscribeConfig.Paths)
-		jLog(jctx, fmt.Sprintf("Returns subscribe() ::: %s CODE ::: %d\n", jctx.file, code))
+		jLog(jctx, fmt.Sprintf("First Returns subscribe() ::: %s CODE ::: %d\n", jctx.file, code))
 
 		// close the current connection and retry
 		conn.Close()
@@ -634,6 +634,11 @@ func workTunnel(jctx *JCtx, statusch chan struct{}) error {
 			goto connect
 		case SubRcSighupNoRestart:
 			jLog(jctx, fmt.Sprintf("not reconnecting for worker %s", jctx.file))
+			statusch <- struct{}{}
+			errCh <- err
+			return
+		case SubRcOnceComplete:
+			jLog(jctx, fmt.Sprintf("ONCE subscription completed successfully for worker %s", jctx.file))
 			statusch <- struct{}{}
 			errCh <- err
 			return
@@ -765,7 +770,7 @@ connect:
 	fmt.Println("Calling subscribe() :::", jctx.file)
 	subscribeConfig := jctx.config
 	code := vendor.subscribe(conn, jctx, subscribeConfig, subscribeConfig.Paths)
-	fmt.Println("Returns subscribe() :::", jctx.file, "CODE ::: ", code)
+	fmt.Println("Second Returns subscribe() :::", jctx.file, "CODE ::: ", code)
 
 	// close the current connection and retry
 	conn.Close()
@@ -799,6 +804,10 @@ connect:
 		goto connect
 	case SubRcSighupNoRestart:
 		jLog(jctx, fmt.Sprintf("not reconnecting for worker %s", jctx.file))
+		statusch <- struct{}{}
+		return
+	case SubRcOnceComplete:
+		jLog(jctx, fmt.Sprintf("ONCE subscription completed successfully for worker %s", jctx.file))
 		statusch <- struct{}{}
 		return
 	}

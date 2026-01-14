@@ -27,6 +27,7 @@ const (
 	SubRcSighupRestart
 	SubRcSighupNoRestart
 	SubRcRPCFailedNoRetry
+	SubRcOnceComplete
 )
 
 func handleOnePacket(ocData *na_pb.OpenConfigData, jctx *JCtx) {

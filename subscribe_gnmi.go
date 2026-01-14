@@ -503,7 +503,7 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 
 	// 1. Form request
 	subs.Mode = gnmi.SubscriptionList_Mode(cfg.Vendor.Gnmi.Mode)
-
+	jLog(jctx, fmt.Sprintf("test: gNMI host: %v, Subscription mode: %v", hostname, subs.Mode.String()))
 	// PROTO encoding
 	if jctx.config.Vendor.Gnmi != nil {
 		switch jctx.config.Vendor.Gnmi.Encoding {
@@ -571,6 +571,12 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 			rsp, err1 = gNMISubHandle.Recv()
 			if err1 == io.EOF {
 				printSummary(jctx)
+				// For ONCE mode, EOF after sync response indicates successful completion
+				if subs.Mode == gnmi.SubscriptionList_ONCE && jctx.receivedSyncRsp {
+					jLog(jctx, fmt.Sprintf("gNMI host: %v, ONCE subscription completed", hostname))
+					datach <- SubRcOnceComplete
+					return
+				}
 				jLog(jctx, fmt.Sprintf("gNMI host: %v, received eof", hostname))
 				datach <- SubRcConnRetry
 				return
