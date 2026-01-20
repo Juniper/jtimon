@@ -48,7 +48,8 @@ Running config of JTIMON:
     "internal-jtimon": {
         "data-log-file": "",
         "csv-log-file": "",
-        "csv-stats": false
+        "gnmi-eos": false,
+        "pre-gnmi-eos": false
     },
     "paths": [
         {
@@ -56,8 +57,10 @@ Running config of JTIMON:
             "freq": 10000,
             "mode": "",
             "origin": "",
+            "target": "",
             "pre-gnmi": false,
-            "gnmi": false
+            "gnmi": false,
+            "gnmi_heartbeat_interval": 0
         }
     ],
     "log": {

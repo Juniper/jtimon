@@ -47,7 +47,7 @@ func getGPRCDialOptions(jctx *JCtx, vendor *vendor) ([]grpc.DialOption, error) {
 		return nil, err
 	}
 
-	if *stateHandler {
+	if *statsHandler {
 		opts = append(opts, grpc.WithStatsHandler(&statshandler{jctx: jctx}))
 		if isCsvStatsEnabled(jctx) {
 			jctx.config.InternalJtimon.csvLogger.Printf(fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s,%s\n",

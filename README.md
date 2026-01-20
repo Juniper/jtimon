@@ -171,6 +171,63 @@ eos : end of sync. Tell Junos to send end of sync for on-change subscriptions.
 grpc/ws : window size of grpc for slower clients
 </pre>
 
+
+## IPv6 Support
+
+jtimon supports both IPv4 and IPv6 addresses for connecting to network devices.
+
+### IPv4 Configuration
+```json
+{
+    "host": "192.168.1.1",
+    "port": 32767,
+    "user": "username",
+    "password": "password",
+    "paths": [
+        {
+            "path": "/interfaces",
+            "freq": 10000
+        }
+    ]
+}
+```
+
+### IPv6 Configuration
+When using IPv6 addresses, wrap the address in square brackets `[]`:
+
+```json
+{
+    "host": "[2001:db8::1]",
+    "port": 32767,
+    "user": "username", 
+    "password": "password",
+    "paths": [
+        {
+            "path": "/interfaces",
+            "freq": 10000
+        }
+    ]
+}
+```
+
+**Note**: The square brackets are required for IPv6 addresses to properly distinguish the address from the port number, following RFC 3986 standards.
+
+### Examples of Valid IPv6 Formats
+- `"[::1]"` - IPv6 loopback
+- `"[2001:db8::1]"` - Full IPv6 address
+- `"[fe80::1%eth0]"` - Link-local with zone identifier
+- `"[::ffff:192.0.2.1]"` - IPv4-mapped IPv6 address
+
+### Command Line Usage
+When using command line options for dial-out or server mode:
+```bash
+# IPv4
+./jtimon --host 127.0.0.1 --port 32767
+
+# IPv6  
+./jtimon --host ::1 --port 32767
+```
+
 ## Kafka Publish
 
 To publish gRPC/Openconfig JTI data to Kafka, use the following json config.

@@ -48,7 +48,8 @@ Running config of JTIMON:
     "internal-jtimon": {
         "data-log-file": "",
         "csv-log-file": "",
-        "csv-stats": false
+        "gnmi-eos": false,
+        "pre-gnmi-eos": false
     },
     "paths": [
         {
@@ -56,8 +57,10 @@ Running config of JTIMON:
             "freq": 10000,
             "mode": "",
             "origin": "",
+            "target": "",
             "pre-gnmi": false,
-            "gnmi": false
+            "gnmi": false,
+            "gnmi_heartbeat_interval": 0
         }
     ],
     "log": {
@@ -82,36 +85,36 @@ New alias creation failed for 127.0.0.1, err: open : no such file or directory
 compression = none
 Connecting to 127.0.0.1:50051
 gRPC headers from host 127.0.0.1:50051
-  content-type: [application/grpc]
   jtisim: [yes]
+  content-type: [application/grpc]
 Receiving telemetry data from 127.0.0.1:50051
 
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
 |         Timestamp            |        KV          |      Packets       |       Bytes        |     Bytes(wire)    |
 +------------------------------+--------------------+--------------------+--------------------+--------------------+
-| Fri May 31 02:21:37 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:22 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:21:39 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:24 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:21:41 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:26 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:21:43 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:28 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:21:45 PDT 2024 |               1980 |                 40 |              87418 |              87618 |
+| Fri Oct 24 13:08:30 IST 2025 |               1980 |                 40 |              87418 |              87618 |
 
 
-| Fri May 31 02:21:47 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri Oct 24 13:08:32 IST 2025 |               3960 |                 80 |             174838 |             175238 |
 
 
-| Fri May 31 02:21:49 PDT 2024 |               3960 |                 80 |             174838 |             175238 |
+| Fri Oct 24 13:08:34 IST 2025 |               3960 |                 80 |             174838 |             175238 |
 
 
 
-Collector Stats for 127.0.0.1:50051 (Run time : 15.001363375s)
+Collector Stats for 127.0.0.1:50051 (Run time : 15.001638458s)
 80           : in-packets
 3960         : data points (KV pairs)
 25           : in-header wirelength (bytes)

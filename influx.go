@@ -503,6 +503,17 @@ func addIDB(ocData *na_pb.OpenConfigData, jctx *JCtx, rtime time.Time) {
 			value32 := v.GetFloatValue()
 			checkAndCeilFloatValues(&value32, nil, &floatVal)
 			kv[xmlpath] = floatVal
+		case *na_pb.KeyValue_LeaflistValue:
+			e := v.GetLeaflistValue().Element
+			var leafListStr string
+			for _, elem := range e {
+				switch elem.Value.(type) {
+				case *na_pb.TypedValue_LeaflistStrValue:
+					llStrValue := elem.GetLeaflistStrValue()
+					leafListStr = leafListStr + llStrValue + ","
+				}
+			}
+			kv[xmlpath] = leafListStr[:len(leafListStr)-1]
 		default:
 		}
 
