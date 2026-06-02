@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -360,7 +362,17 @@ func gnmiParseValue(gnmiValue *gnmi.TypedValue, ts bool, enableUint bool) (inter
 	case *gnmi.TypedValue_BoolVal:
 		value = gnmiValue.GetBoolVal()
 	case *gnmi.TypedValue_BytesVal:
-		value = gnmiValue.GetBytesVal()
+		//value = gnmiValue.GetBytesVal()
+                byteVal := gnmiValue.GetBytesVal()
+                if len(byteVal) == 4 {
+                      var double_val float32
+                      if err := binary.Read(bytes.NewReader(byteVal), binary.LittleEndian, &double_val); err != nil {
+                              value = hex.EncodeToString(byteVal)
+                      }
+                      value = fmt.Sprintf("%0.2f", double_val)
+                } else {
+                      value = hex.EncodeToString(byteVal)
+	        }
 	case *gnmi.TypedValue_AsciiVal:
 		value = gnmiValue.GetAsciiVal()
 	case *gnmi.TypedValue_AnyVal:
