@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -123,7 +122,9 @@ func publishToInflux(jctx *JCtx, mName string, prefixPath string, kvpairs map[st
 		return errors.New(msg)
 	}
 
-	jLog(jctx, fmt.Sprintf("jctx.config.Influx.WritePerMeasurement: %v.. ", jctx.config.Influx.WritePerMeasurement))
+	if *print || IsVerboseLogging(jctx) {
+		jLog(jctx, fmt.Sprintf("jctx.config.Influx.WritePerMeasurement: %v.. ", jctx.config.Influx.WritePerMeasurement))
+	}
 	if jctx.config.Influx.WritePerMeasurement {
 		if *print || IsVerboseLogging(jctx) {
 			msg := fmt.Sprintf("New point (per measurement): %v", pt.String())
@@ -264,10 +265,7 @@ func gnmiParseHeader(rsp *gnmi.SubscribeResponse, parseOutput *gnmiParseOutputT)
 		if hdr.GetSubscribedPath() != "" {
 			mName = hdr.GetSubscribedPath()
 		}
-		stName = ""
-		if hdr.GetStreamedPath() != "" {
-			stName = hdr.GetStreamedPath()
-		}
+		stName = hdr.GetStreamedPath()
 		xpathVal[prefixPath+gXPathTokenPathSep+gGnmiJtimonExportTsName] = hdr.GetExportTimestamp()
 
 		tsInMillisecs := (rsp.GetUpdate().GetTimestamp() / gGnmiFreqToMilli)
@@ -323,6 +321,25 @@ func gnmiParseNotification(parseOrigin bool, rsp *gnmi.SubscribeResponse, parseO
 	parseOutput.inKvs += uint64(len(parseOutput.xpaths))
 	if parseOutput.jXpaths != nil {
 		parseOutput.inKvs += uint64(len(parseOutput.jXpaths.xPaths))
+	}
+	// Extract target and origin from prefix and add to kvpairs
+	prefix := notif.GetPrefix()
+	if prefix != nil {
+		target := prefix.GetTarget()
+		if target != "" {
+			if parseOutput.kvpairs == nil {
+				parseOutput.kvpairs = make(map[string]string)
+			}
+			parseOutput.kvpairs["target"] = target
+		}
+
+		origin := prefix.GetOrigin()
+		if origin != "" {
+			if parseOutput.kvpairs == nil {
+				parseOutput.kvpairs = make(map[string]string)
+			}
+			parseOutput.kvpairs["origin"] = origin
+		}
 	}
 
 	parseOutput, err = gnmiParseHeader(rsp, parseOutput)
@@ -425,13 +442,27 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 		}
 	}
 
-	// if *print || IsVerboseLogging(jctx) {
-	var (
-		jxpaths  map[string]interface{}
-		jGnmiHdr string
-	)
+	// Extract extension header tags directly via proto getters (no JSON overhead on hot path)
+	if parseOutput.jHeader != nil && parseOutput.jHeader.hdr == nil {
+		hdrExt := parseOutput.jHeader.hdrExt
+		if component := hdrExt.GetComponent(); component != "" {
+			parseOutput.kvpairs["component"] = component
+		}
+		if componentId := hdrExt.GetComponentId(); componentId != 0 {
+			parseOutput.kvpairs["component_id"] = convertToString(interface{}(componentId))
+		}
+		if subComponentId := hdrExt.GetSubComponentId(); subComponentId != 0 {
+			parseOutput.kvpairs["sub_component_id"] = convertToString(interface{}(subComponentId))
+		}
+		parseOutput.xpaths["eom"] = strconv.FormatBool(hdrExt.GetEom())
+		parseOutput.xpaths["sequence_number"] = int64(hdrExt.GetSequenceNumber())
+	}
 
-	if true {
+	if *print || IsVerboseLogging(jctx) {
+		var (
+			jxpaths  map[string]interface{}
+			jGnmiHdr string
+		)
 		if parseOutput.jXpaths != nil {
 			jxpaths = parseOutput.jXpaths.xPaths
 		}
@@ -440,35 +471,8 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 				jGnmiHdr = "updates header{" + parseOutput.jHeader.hdr.String() + "}"
 			} else {
 				jGnmiHdr = "extension header{" + parseOutput.jHeader.hdrExt.String() + "}"
-				var jHeaderData map[string]interface{}
-				jGnmiHdrExt, err := json.Marshal(parseOutput.jHeader.hdrExt)
-				if err != nil {
-					return errors.New("unable to Marshal Juniper extension header")
-				}
-				err = json.Unmarshal(jGnmiHdrExt, &jHeaderData)
-				if err != nil {
-					return errors.New("unable to decode Juniper extension header")
-				}
-				jHeaderKeyToTags := []string{"component", "component_id", "sub_component_id"}
-				for _, v := range jHeaderKeyToTags {
-					if _, ok := jHeaderData[v]; ok {
-						strVal := convertToString(jHeaderData[v])
-						if strVal == "Unsupported type" {
-							jLog(jctx, fmt.Sprintf(".Skip Adding juniper Header Extension: %s "+
-								"to Tags. Unable to convert extension value: %v to string. ", v, jHeaderData[v]))
-							continue
-						}
-						parseOutput.kvpairs[v] = strVal
-					}
-				}
-				parseOutput.xpaths["eom"] = strconv.FormatBool(parseOutput.jHeader.hdrExt.GetEom())
-				parseOutput.xpaths["sequence_number"] = int64(parseOutput.jHeader.hdrExt.GetSequenceNumber())
 			}
-
 		}
-	}
-
-	if *print || IsVerboseLogging(jctx) {
 		jLog(jctx, fmt.Sprintf("prefix: %v, kvpairs: %v, xpathVal: %v, juniperXpathVal: %v, juniperhdr: %v, measurement: %v, rsp: %v\n\n",
 			parseOutput.prefixPath, parseOutput.kvpairs, parseOutput.xpaths, jxpaths, jGnmiHdr, parseOutput.mName, rsp))
 	}
@@ -502,7 +506,8 @@ func xPathsTognmiSubscription(pathsCfg []PathsConfig, dialOutpathsCfg []*dialout
 			mode, freq := gnmiFreq(mode, p.Freq)
 			gp.Origin = p.Origin
 
-			subs = append(subs, &gnmi.Subscription{Path: gp, Mode: mode, SampleInterval: freq})
+			gnmiHb := gnmiHeartBeat(p.Gnmi_heartbeat_interval)
+			subs = append(subs, &gnmi.Subscription{Path: gp, Mode: mode, SampleInterval: freq, HeartbeatInterval: gnmiHb})
 		}
 	} else {
 		for _, p := range dialOutpathsCfg {
@@ -540,7 +545,8 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 	// 1. Form request
 
 	// Support only STREAM
-	subs.Mode = gnmi.SubscriptionList_STREAM
+	// subs.Mode = gnmi.SubscriptionList_STREAM
+	subs.Mode = gnmi.SubscriptionList_Mode(cfg.Vendor.Gnmi.Mode)
 
 	// PROTO encoding
 	if jctx.config.Vendor.Gnmi != nil {
@@ -561,7 +567,19 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 		// To make worker absorb any further config changes
 		return SubRcConnRetry
 	}
-
+	// Set target in prefix if any path has a target configured
+	var target string
+	for _, path := range paths {
+		if path.Target != "" {
+			target = path.Target
+			break
+		}
+	}
+	if target != "" {
+		subs.Prefix = &gnmi.Path{
+			Target: target,
+		}
+	}
 	// 2. Subscribe
 	if jctx.config.User != "" && jctx.config.Password != "" {
 		md := metadata.New(map[string]string{"username": jctx.config.User, "password": jctx.config.Password})
