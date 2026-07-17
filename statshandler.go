@@ -89,7 +89,7 @@ var periodic_stats_updated bool = false
 // statsChanBufSize bounds the async stats queue. With the non-blocking,
 // drop-on-full enqueue in HandleRPC this caps the memory held by in-flight
 // stats samples while absorbing short bursts at high packet rates.
-const statsChanBufSize = 16384
+const statsChanBufSize = 65536
 
 // statPkt carries the minimal data captured on the gRPC receive goroutine so
 // that all heavy stats processing can run on a dedicated worker goroutine.
@@ -369,7 +369,9 @@ func (h *statshandler) processStatsPkt(pkt *statPkt) {
 				if stat.Timestamp > stat.re_payload_get_timestamp {
 					latency = stat.Timestamp - stat.re_payload_get_timestamp
 				}
-				xstats.latency_wrap = append(xstats.latency_wrap, float64(latency))
+				if xstats.wrap_counter >= 1 {
+					xstats.latency_wrap = append(xstats.latency_wrap, float64(latency))
+				}
 				if xstats.max_latency < latency {
 					xstats.max_latency = latency
 				}
@@ -379,10 +381,14 @@ func (h *statshandler) processStatsPkt(pkt *statPkt) {
 				xstats.avg_latency = (xstats.avg_latency + latency) / 2
 			}
 
-			xstats.size_pkts_wrap = append(xstats.size_pkts_wrap, float64(pkt.wireLength))
+			if xstats.wrap_counter >= 1 {
+				xstats.size_pkts_wrap = append(xstats.size_pkts_wrap, float64(pkt.wireLength))
+			}
 			inter_pkt_delay := stat.Timestamp - xstats.prev_timestamp
 			xstats.cur_inter_pkt_delay = inter_pkt_delay
-			xstats.delay_pkts_wrap = append(xstats.delay_pkts_wrap, strconv.Itoa(int(inter_pkt_delay)))
+			if xstats.wrap_counter >= 1 {
+				xstats.delay_pkts_wrap = append(xstats.delay_pkts_wrap, strconv.Itoa(int(inter_pkt_delay)))
+			}
 			xstats.wrap_inter_pkt_delay = ""
 			if xstats.max_inter_pkt_delay < inter_pkt_delay {
 				xstats.max_inter_pkt_delay = inter_pkt_delay
@@ -396,32 +402,37 @@ func (h *statshandler) processStatsPkt(pkt *statPkt) {
 				if xstats.wrap_start_timestamp != 0 {
 					xstats.wrap_time = uint64(time.Now().UnixMilli()) - xstats.wrap_start_timestamp
 				}
-				xstats.percentile_pkt_size = ""
-				sort.Float64s(xstats.size_pkts_wrap)
-				for i := 10; i <= 90; i += 10 {
-					percentileValue := percentile(xstats.size_pkts_wrap, float64(i))
-					xstats.percentile_pkt_size += fmt.Sprintf("%d:%f,", i, percentileValue)
+				// Skip sort/percentile/join for the first wrap (initial sync data is
+				// not representative and can be orders of magnitude larger than a
+				// normal periodic wrap, causing a worker stall).
+				if xstats.wrap_counter >= 1 {
+					xstats.percentile_pkt_size = ""
+					sort.Float64s(xstats.size_pkts_wrap)
+					for i := 10; i <= 90; i += 10 {
+						percentileValue := percentile(xstats.size_pkts_wrap, float64(i))
+						xstats.percentile_pkt_size += fmt.Sprintf("%d:%f,", i, percentileValue)
+					}
+					xstats.percentile_pkt_size += fmt.Sprintf("95:%f,99:%f", percentile(xstats.size_pkts_wrap, 95), percentile(xstats.size_pkts_wrap, 99))
+					xstats.percentile_latency = ""
+					sort.Float64s(xstats.latency_wrap)
+					for i := 50; i <= 80; i += 10 {
+						percentileValue := percentile(xstats.latency_wrap, float64(i))
+						xstats.percentile_latency += fmt.Sprintf("%d:%f,", i, percentileValue)
+					}
+					xstats.percentile_latency += fmt.Sprintf("85:%f,90:%f,95:%f", percentile(xstats.latency_wrap, 85), percentile(xstats.latency_wrap, 90), percentile(xstats.latency_wrap, 95))
+					for i := 96; i <= 100; i++ {
+						percentileValue := percentile(xstats.latency_wrap, float64(i))
+						xstats.percentile_latency += fmt.Sprintf(",%d:%f", i, percentileValue)
+					}
+					xstats.cur_wrap_inter_pkt_delay = strings.Join(xstats.delay_pkts_wrap[:], ",")
 				}
-				xstats.percentile_pkt_size += fmt.Sprintf("95:%f,99:%f", percentile(xstats.size_pkts_wrap, 95), percentile(xstats.size_pkts_wrap, 99))
 				xstats.size_pkts_wrap = []float64{}
-				xstats.percentile_latency = ""
-				sort.Float64s(xstats.latency_wrap)
-				for i := 50; i <= 80; i += 10 {
-					percentileValue := percentile(xstats.latency_wrap, float64(i))
-					xstats.percentile_latency += fmt.Sprintf("%d:%f,", i, percentileValue)
-				}
-				xstats.percentile_latency += fmt.Sprintf("85:%f,90:%f,95:%f", percentile(xstats.latency_wrap, 85), percentile(xstats.latency_wrap, 90), percentile(xstats.latency_wrap, 95))
-				for i := 96; i <= 100; i++ {
-					percentileValue := percentile(xstats.latency_wrap, float64(i))
-					xstats.percentile_latency += fmt.Sprintf(",%d:%f", i, percentileValue)
-				}
 				xstats.latency_wrap = []float64{}
 				xstats.wrap_start_timestamp = 0
 				xstats.packets_per_wrap = xstats.cur_packets_per_wrap
 				xstats.bytes_per_wrap = xstats.cur_bytes_per_wrap
 				xstats.cur_packets_per_wrap = 0
 				xstats.cur_bytes_per_wrap = 0
-				xstats.cur_wrap_inter_pkt_delay = strings.Join(xstats.delay_pkts_wrap[:], ",")
 				xstats.wrap_inter_pkt_delay = ""
 				xstats.delay_pkts_wrap = []string{}
 

@@ -169,9 +169,13 @@ func publishKPIToInflux(jctx *JCtx, mName string, tags map[string]string, fields
 		}
 
 		if !gGnmiUnitTestCoverage {
-			jctx.influxCtx.batchWMCh <- &batchWMData{
+			select {
+			case jctx.influxCtx.batchWMCh <- &batchWMData{
 				measurement: mName,
 				points:      []*client.Point{pt},
+			}:
+			default:
+				jLog(jctx, fmt.Sprintf("publishKPIToInflux: batchWMCh full, dropping point for %s", mName))
 			}
 		}
 	} else {
@@ -181,7 +185,11 @@ func publishKPIToInflux(jctx *JCtx, mName string, tags map[string]string, fields
 		}
 
 		if !gGnmiUnitTestCoverage {
-			jctx.influxCtx.batchWCh <- []*client.Point{pt}
+			select {
+			case jctx.influxCtx.batchWCh <- []*client.Point{pt}:
+			default:
+				jLog(jctx, fmt.Sprintf("publishKPIToInflux: batchWCh full, dropping point for %s", mName))
+			}
 		}
 	}
 
