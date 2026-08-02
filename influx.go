@@ -47,6 +47,17 @@ type InfluxConfig struct {
 	RetentionPolicyDuration int    `json:"retention-policy-duration"`
 	AccumulatorFrequency    int    `json:"accumulator-frequency"`
 	WritePerMeasurement     bool   `json:"write-per-measurement"`
+	// BufferSize is the capacity of the in-memory batch channel that decouples
+	// the gRPC receive path from InfluxDB writes. A large buffer absorbs bursts
+	// so a temporarily slow Influx does not immediately block (and thus
+	// back-pressure) the device. Producers still block (never drop) once it is
+	// full. Defaults to BatchSize*16 when unset.
+	BufferSize int `json:"buffer-size"`
+	// WriteWorkers is the number of concurrent goroutines writing batches to
+	// InfluxDB. Parallel writers keep draining the buffer while other writes
+	// are in flight, raising sustained throughput so Influx can keep up.
+	// Defaults to 4 when unset.
+	WriteWorkers int `json:"write-workers"`
 }
 
 type metricIDB struct {
@@ -228,12 +239,43 @@ func dbBatchWriteM(jctx *JCtx) {
 	}
 
 	batchSize := jctx.config.Influx.BatchSize
-	batchMCh := make(chan *batchWMData, batchSize/4)
+
+	// Large absorbing buffer decoupled from batchSize so bursts don't
+	// immediately block (and back-pressure) the receive path. Producers still
+	// block once it is full, so data is never dropped.
+	bufCap := jctx.config.Influx.BufferSize
+	if bufCap <= 0 {
+		bufCap = batchSize * 16
+	}
+	if bufCap < batchSize {
+		bufCap = batchSize
+	}
+	batchMCh := make(chan *batchWMData, bufCap)
 	jctx.influxCtx.batchWMCh = batchMCh
+
+	workers := jctx.config.Influx.WriteWorkers
+	if workers <= 0 {
+		workers = 4
+	}
 
 	// wake up periodically and perform batch write into InfluxDB
 	bFreq := jctx.config.Influx.BatchFrequency
-	jLog(jctx, fmt.Sprintln("batch size:", batchSize, "batch frequency:", bFreq))
+	jLog(jctx, fmt.Sprintln("batch size:", batchSize, "batch frequency:", bFreq, "buffer:", bufCap, "write workers:", workers))
+
+	// Pool of concurrent writers. Draining continues while writes are in
+	// flight, so a slow InfluxDB HTTP write no longer stalls the buffer (which
+	// is what back-pressured the router). Handoff on writeCh blocks when all
+	// workers are busy, so data is never dropped - only paced.
+	writeCh := make(chan client.BatchPoints, workers)
+	for w := 0; w < workers; w++ {
+		go func() {
+			for bp := range writeCh {
+				if err := (*jctx.influxCtx.influxClient).Write(bp); err != nil {
+					jLog(jctx, fmt.Sprintf("Batch DB write failed: %v", err))
+				}
+			}
+		}()
+	}
 
 	ticker := time.NewTicker(time.Duration(bFreq) * time.Millisecond)
 	go func() {
@@ -271,34 +313,22 @@ func dbBatchWriteM(jctx *JCtx) {
 					for k = 0; k < len(packet); k++ {
 						bp.AddPoint(packet[k])
 						if len(bp.Points()) >= batchSize {
-							jLog(jctx, fmt.Sprintf("Attempt to write %d points in %s", len(bp.Points()), measurement))
-							if err := (*jctx.influxCtx.influxClient).Write(bp); err != nil {
-								jLog(jctx, fmt.Sprintf("Batch DB write failed for measurement %s: %v", measurement, err))
-							} else {
-								jLog(jctx, fmt.Sprintln("Batch write successful for measurement: ", measurement))
-							}
+							writeCh <- bp
 
 							bp, err = client.NewBatchPoints(client.BatchPointsConfig{
 								Database:        jctx.config.Influx.Dbname,
 								Precision:       "ns",
 								RetentionPolicy: jctx.config.Influx.RetentionPolicy,
 							})
+							if err != nil {
+								jLog(jctx, fmt.Sprintf("NewBatchPoints failed, error: %v", err))
+								break
+							}
 						}
 					}
 				}
-				if len(bp.Points()) > 0 {
-					jLog(jctx, fmt.Sprintf("Attempt to write %d points in %s", len(bp.Points()), measurement))
-					if err := (*jctx.influxCtx.influxClient).Write(bp); err != nil {
-						jLog(jctx, fmt.Sprintf("Batch DB write failed for measurement %s: %v", measurement, err))
-					} else {
-						jLog(jctx, fmt.Sprintln("Batch write successful for measurement: ", measurement))
-					}
-
-					bp, err = client.NewBatchPoints(client.BatchPointsConfig{
-						Database:        jctx.config.Influx.Dbname,
-						Precision:       "ns",
-						RetentionPolicy: jctx.config.Influx.RetentionPolicy,
-					})
+				if err == nil && len(bp.Points()) > 0 {
+					writeCh <- bp
 				}
 			}
 		}
@@ -311,43 +341,90 @@ func dbBatchWrite(jctx *JCtx) {
 	}
 
 	batchSize := jctx.config.Influx.BatchSize
-	batchCh := make(chan []*client.Point, batchSize)
+
+	// Large absorbing buffer decoupled from batchSize so bursts don't
+	// immediately block (and back-pressure) the receive path. Producers still
+	// block once it is full, so data is never dropped.
+	bufCap := jctx.config.Influx.BufferSize
+	if bufCap <= 0 {
+		bufCap = batchSize * 16
+	}
+	if bufCap < batchSize {
+		bufCap = batchSize
+	}
+	batchCh := make(chan []*client.Point, bufCap)
 	jctx.influxCtx.batchWCh = batchCh
+
+	workers := jctx.config.Influx.WriteWorkers
+	if workers <= 0 {
+		workers = 4
+	}
 
 	// wake up periodically and perform batch write into InfluxDB
 	bFreq := jctx.config.Influx.BatchFrequency
-	jLog(jctx, fmt.Sprintln("batch size:", batchSize, "batch frequency:", bFreq))
+	jLog(jctx, fmt.Sprintln("batch size:", batchSize, "batch frequency:", bFreq, "buffer:", bufCap, "write workers:", workers))
 
-	ticker := time.NewTicker(time.Duration(bFreq) * time.Millisecond)
-	go func() {
-		for range ticker.C {
-			n := len(batchCh)
-			if n != 0 {
-				bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-					Database:        jctx.config.Influx.Dbname,
-					Precision:       "ns",
-					RetentionPolicy: jctx.config.Influx.RetentionPolicy,
-				})
+	// Pool of concurrent writers. Draining continues while writes are in
+	// flight, so a slow InfluxDB HTTP write no longer stalls the buffer (which
+	// is what back-pressured the router). Handoff on writeCh blocks when all
+	// workers are busy, so data is never dropped - only paced.
+	writeCh := make(chan client.BatchPoints, workers)
+	for w := 0; w < workers; w++ {
+		go func() {
+			for bp := range writeCh {
+				if err := (*jctx.influxCtx.influxClient).Write(bp); err != nil {
+					jLog(jctx, fmt.Sprintf("Batch DB write failed: %v", err))
+				}
+			}
+		}()
+	}
 
+	newBP := func() (client.BatchPoints, error) {
+		return client.NewBatchPoints(client.BatchPointsConfig{
+			Database:        jctx.config.Influx.Dbname,
+			Precision:       "ns",
+			RetentionPolicy: jctx.config.Influx.RetentionPolicy,
+		})
+	}
+
+	// flush assembles up to n buffered packets into batchSize-capped batches and
+	// hands them to the writer pool.
+	flush := func(n int) {
+		bp, err := newBP()
+		if err != nil {
+			jLog(jctx, fmt.Sprintf("NewBatchPoints failed, error: %v\n", err))
+			return
+		}
+		for i := 0; i < n; i++ {
+			packet := <-batchCh
+			for j := 0; j < len(packet); j++ {
+				bp.AddPoint(packet[j])
+			}
+			if len(bp.Points()) >= batchSize {
+				writeCh <- bp
+				bp, err = newBP()
 				if err != nil {
 					jLog(jctx, fmt.Sprintf("NewBatchPoints failed, error: %v\n", err))
 					return
 				}
+			}
+		}
+		if len(bp.Points()) > 0 {
+			writeCh <- bp
+		}
+	}
 
-				for i := 0; i < n; i++ {
-					packet := <-batchCh
-					for j := 0; j < len(packet); j++ {
-						bp.AddPoint(packet[j])
-					}
+	ticker := time.NewTicker(time.Duration(bFreq) * time.Millisecond)
+	go func() {
+		for range ticker.C {
+			// Keep draining until the buffer is empty so a burst is relieved
+			// quickly instead of only one batch per tick.
+			for {
+				n := len(batchCh)
+				if n == 0 {
+					break
 				}
-
-				jLog(jctx, fmt.Sprintf("Batch processing: #packets:%d #points:%d\n", n, len(bp.Points())))
-
-				if err := (*jctx.influxCtx.influxClient).Write(bp); err != nil {
-					jLog(jctx, fmt.Sprintf("Batch DB write failed: %v", err))
-				} else {
-					jLog(jctx, fmt.Sprintln("Batch write successful! Post batch write available points: ", len(batchCh)))
-				}
+				flush(n)
 			}
 		}
 	}()
