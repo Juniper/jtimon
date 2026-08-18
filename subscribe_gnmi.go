@@ -372,21 +372,9 @@ func gnmiHandleResponse(jctx *JCtx, rsp *gnmi.SubscribeResponse) error {
 		hostname   = jctx.config.Host + ":" + strconv.Itoa(jctx.config.Port)
 	)
 
+	parseOutput.syncRsp = jctx.receivedSyncRsp
 	// Update packet stats
 	updateStats(jctx, nil, true)
-	if syncRsp := rsp.GetSyncResponse(); syncRsp {
-		jLog(jctx, fmt.Sprintf("gNMI host: %v, received sync response", hostname))
-		fmt.Printf("gNMI host: %v, received sync response\n", hostname)
-		file, err := os.Create("SYNCREC")
-		if err != nil {
-			jLog(jctx, fmt.Sprintf("Failed to create SYNCREC file: %v", err))
-		} else {
-			file.Close()
-		}
-		parseOutput.syncRsp = true
-		jctx.receivedSyncRsp = true
-		return nil
-	}
 
 	/*
 	 * Extract prefix, tags, values and juniper speecific header info if present
@@ -648,6 +636,18 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 				return
 			}
 
+			if syncRsp := rsp.GetSyncResponse(); syncRsp {
+				jLog(jctx, fmt.Sprintf("gNMI host: %v, received sync response", hostname))
+				fmt.Printf("gNMI host: %v, received sync response\n", hostname)
+				file, err := os.Create("SYNCREC")
+				if err != nil {
+					jLog(jctx, fmt.Sprintf("Failed to create SYNCREC file: %v", err))
+				} else {
+					file.Close()
+				}
+				jctx.receivedSyncRsp = true
+				continue
+			}
 			if *noppgoroutines {
 				gnmiErr := gnmiHandleResponse(jctx, rsp)
 				if gnmiErr != nil && strings.Contains(gnmiErr.Error(), gGnmiJtimonIgnoreErrorSubstr) {
