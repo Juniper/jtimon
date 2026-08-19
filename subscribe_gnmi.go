@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -597,12 +598,48 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 
 	datach := make(chan SubErrorCode)
 
+	/*
+	 * Processing inline in the receive loop lets any downstream block (influx
+	 * handoff, stats lock) stall Recv, which stops replenishing the HTTP/2
+	 * window and back-pressures the device. Hand the responses to a bounded
+	 * pool of workers instead, so the receive loop only enqueues.
+	 */
+	var rspCh chan *gnmi.SubscribeResponse
+	if *noppgoroutines {
+		workers := *ppWorkers
+		if workers <= 0 {
+			workers = runtime.NumCPU()
+		}
+		qSize := *ppQueueSize
+		if qSize <= 0 {
+			qSize = 1
+		}
+
+		rspCh = make(chan *gnmi.SubscribeResponse, qSize)
+		jLog(jctx, fmt.Sprintf("gNMI host: %v, packet processing workers: %v, queue size: %v", hostname, workers, qSize))
+
+		for i := 0; i < workers; i++ {
+			go func() {
+				for r := range rspCh {
+					gnmiErr := gnmiHandleResponse(jctx, r)
+					if gnmiErr != nil && strings.Contains(gnmiErr.Error(), gGnmiJtimonIgnoreErrorSubstr) {
+						jLog(jctx, fmt.Sprintf("gNMI host: %v, parsing response failed: %v", hostname, gnmiErr))
+					}
+				}
+			}()
+		}
+	}
+
 	// 3. Receive rsp
 	go func() {
 		var (
 			rsp  *gnmi.SubscribeResponse
 			err1 error
 		)
+
+		if rspCh != nil {
+			defer close(rspCh)
+		}
 
 		jLog(jctx, fmt.Sprintf("gNMI host: %v, receiving data..", hostname))
 		for {
@@ -648,19 +685,15 @@ func subscribegNMI(conn *grpc.ClientConn, jctx *JCtx, cfg Config, paths []PathsC
 				jctx.receivedSyncRsp = true
 				continue
 			}
-			if *noppgoroutines {
-				gnmiErr := gnmiHandleResponse(jctx, rsp)
-				if gnmiErr != nil && strings.Contains(gnmiErr.Error(), gGnmiJtimonIgnoreErrorSubstr) {
-					jLog(jctx, fmt.Sprintf("gNMI host: %v, parsing response failed: %v", hostname, gnmiErr))
-					continue
-				}
+			if rspCh != nil {
+				rspCh <- rsp
 			} else {
-				go func() {
-					gnmiErr1 := gnmiHandleResponse(jctx, rsp)
+				go func(r *gnmi.SubscribeResponse) {
+					gnmiErr1 := gnmiHandleResponse(jctx, r)
 					if gnmiErr1 != nil && strings.Contains(gnmiErr1.Error(), gGnmiJtimonIgnoreErrorSubstr) {
 						jLog(jctx, fmt.Sprintf("gNMI host: %v, parsing response failed: %v", hostname, gnmiErr1))
 					}
-				}()
+				}(rsp)
 			}
 		}
 	}()

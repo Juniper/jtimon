@@ -27,6 +27,8 @@ var (
 	pProf           = flag.Bool("pprof", false, "Profile JTIMON")
 	pProfPort       = flag.Int32("pprof-port", 6060, "Profile port")
 	noppgoroutines  = flag.Bool("no-per-packet-goroutines", false, "Spawn per packet go routines")
+	ppWorkers       = flag.Int("packet-workers", 0, "Number of packet processing workers used with -no-per-packet-goroutines (0: one per CPU)")
+	ppQueueSize     = flag.Int("packet-queue-size", 16384, "Depth of the queue between the receive loop and the packet processing workers")
 	genTestData     = flag.Bool("generate-test-data", false, "Generate test data")
 	conTestData     = flag.Bool("consume-test-data", false, "Consume test data")
 	dialOut         = flag.Bool("dial-out", false, "Act as server supporting dialOut connections")
