@@ -122,6 +122,10 @@ type statshandler struct {
 	xpathStats         map[string]xpathStats
 	previousXpathStats map[string]xpathStats
 	previousSecs       uint64
+
+	// keyCardinality tracks, per sensor, the set of distinct values seen for
+	// each tag key. Uncapped by request, so memory grows with distinct values.
+	keyCardinality map[string]map[string]map[string]struct{}
 }
 
 // newStatsHandler creates a stats handler and starts its background worker.
@@ -132,6 +136,7 @@ func newStatsHandler(jctx *JCtx) *statshandler {
 		done:               make(chan struct{}),
 		xpathStats:         make(map[string]xpathStats),
 		previousXpathStats: make(map[string]xpathStats),
+		keyCardinality:     make(map[string]map[string]map[string]struct{}),
 	}
 	go h.statsWorker()
 	return h
@@ -280,6 +285,7 @@ func (h *statshandler) processStatsPkt(pkt *statPkt) {
 		stat := h.getKPIStats(v)
 		if stat != nil && stat.Timestamp != 0 {
 			path := stat.SensorName + ":" + strings.TrimSuffix(stat.Streamed_path, "/") + ":" + strings.TrimSuffix(stat.Path, "/") + ":" + stat.Component + ":" + fmt.Sprintf("%d", stat.ComponentId) + ":" + fmt.Sprintf("%d", stat.SubComponentId)
+			h.trackKeyCardinality(strings.TrimSuffix(stat.Path, "/"), v)
 			if h.jctx.config.InternalJtimon.CsvLog != "" {
 				h.jctx.config.InternalJtimon.csvLogger.Printf(
 					fmt.Sprintf("%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
@@ -503,6 +509,49 @@ func (h *statshandler) getKPIStats(subResponse *gnmi_pb.SubscribeResponse) *kpiS
 
 }
 
+// trackKeyCardinality records the distinct values seen for each tag key of a
+// sensor. Tag keys are derived exactly like the influx path (gnmiParsePath), so
+// counts map directly to InfluxDB series cardinality. Runs only on the stats
+// worker goroutine, so the maps need no locking.
+func (h *statshandler) trackKeyCardinality(sensorName string, rsp *gnmi_pb.SubscribeResponse) {
+	notif := rsp.GetUpdate()
+	if notif == nil {
+		return
+	}
+
+	kvpairs := map[string]string{}
+	prefixPath := ""
+	if prefix := notif.GetPrefix(); prefix != nil {
+		prefixPath, kvpairs, _ = gnmiParsePath(prefixPath, prefix.GetElem(), kvpairs, nil)
+	}
+	for _, u := range notif.GetUpdate() {
+		_, kvpairs, _ = gnmiParsePath(prefixPath, u.GetPath().GetElem(), kvpairs, nil)
+	}
+	if len(kvpairs) == 0 {
+		return
+	}
+
+	// Key by sensor name; fall back to the prefix path when it is absent.
+	sensor := sensorName
+	if sensor == "" {
+		sensor = prefixPath
+	}
+
+	keys := h.keyCardinality[sensor]
+	if keys == nil {
+		keys = make(map[string]map[string]struct{})
+		h.keyCardinality[sensor] = keys
+	}
+	for k, val := range kvpairs {
+		vals := keys[k]
+		if vals == nil {
+			vals = make(map[string]struct{})
+			keys[k] = vals
+		}
+		vals[val] = struct{}{}
+	}
+}
+
 func updateStats(jctx *JCtx, ocData *na_pb.OpenConfigData, needLock bool) {
 	if !*stateHandler {
 		return
@@ -682,6 +731,22 @@ func (h *statshandler) printStatsRate() {
 			}
 			publishKPIToInflux(h.jctx, "kpi-measurements", tags, fields)
 			h.previousXpathStats[k] = v
+		}
+
+		// Per-sensor key count and per-key distinct-value cardinality.
+		for sensor, keys := range h.keyCardinality {
+			keyCount := int64(len(keys))
+			for keyName, vals := range keys {
+				publishKPIToInflux(h.jctx, "kpi-cardinality",
+					map[string]string{
+						"sensor_info": sensor,
+						"key_name":    keyName,
+					},
+					map[string]interface{}{
+						"distinct_values": int64(len(vals)),
+						"key_count":       keyCount,
+					})
+			}
 		}
 		h.previousSecs = current_secs
 
