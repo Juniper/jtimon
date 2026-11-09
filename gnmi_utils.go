@@ -377,7 +377,12 @@ func gnmiParseValue(gnmiValue *gnmi.TypedValue, ts bool, enableUint bool) (inter
 	case *gnmi.TypedValue_AnyVal:
 		value = gnmiValue.GetAnyVal()
 	case *gnmi.TypedValue_DoubleVal:
-		value = gnmiValue.GetDoubleVal()
+		// Ceil +/-Inf (e.g. optics laser power when the laser is off); the
+		// influx client rejects the whole point for an Inf field value.
+		var floatVal float64
+		value64 := gnmiValue.GetDoubleVal()
+		checkAndCeilFloatValues(nil, &value64, &floatVal)
+		value = floatVal
 	case *gnmi.TypedValue_DecimalVal:
 		var floatVal float64
 		d64Val := gnmiValue.GetDecimalVal()

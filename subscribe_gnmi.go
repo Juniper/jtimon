@@ -109,10 +109,21 @@ func publishToInflux(jctx *JCtx, mName string, prefixPath string, kvpairs map[st
 
 	// Convert leaf-list values if present in xpaths for influxdb Point write
 	for key, value := range xpaths {
-		// Check if the value is a slice
-		if members, ok := value.([]string); ok {
+		switch v := value.(type) {
+		case nil:
+			// A nil field (e.g. an empty leaf-list) renders as "key=" which is
+			// invalid line protocol and makes InfluxDB reject the entire point
+			// (dropping all its fields). Drop the valueless field instead.
+			delete(xpaths, key)
+		case []string:
 			// Join the slice elements into a single string separated by commas
-			xpaths[key] = strings.Join(members, ",")
+			xpaths[key] = strings.Join(v, ",")
+		case []byte:
+			// A []byte field is written unquoted by the influx client; an empty
+			// one renders as "key=" which is invalid line protocol and makes
+			// InfluxDB reject the entire point (dropping all its fields). Store
+			// it as a string field instead.
+			xpaths[key] = string(v)
 		}
 	}
 
